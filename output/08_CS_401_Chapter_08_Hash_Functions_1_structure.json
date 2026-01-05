@@ -1,0 +1,47 @@
+{
+  "document": {
+    "filename": "08_CS_401_Chapter_08_Hash_Functions_1.pdf",
+    "total_pages": 1,
+    "metadata": {
+      "format": "PDF 1.7",
+      "title": "",
+      "author": "",
+      "subject": "",
+      "keywords": "",
+      "creator": "PDFium",
+      "producer": "PDFium",
+      "creationDate": "D:20260106010803",
+      "modDate": "",
+      "trapped": "",
+      "encryption": null
+    }
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "width": 720.0,
+      "height": 540.0,
+      "blocks": [
+        {
+          "block_id": "p1_b0",
+          "type": "text",
+          "bbox": [
+            295.32000732421875,
+            507.53997802734375,
+            663.3380126953125,
+            525.6472778320312
+          ],
+          "extraction_method": "direct",
+          "confidence": 0.3,
+          "text": "1\n©MSA 2025/2026",
+          "direction": "ltr",
+          "rtl_ratio": 0.0,
+          "font": "Aptos",
+          "size": 12.0,
+          "column": 1
+        }
+      ],
+      "columns": 1
+    }
+  ]
+}
