@@ -6,8 +6,9 @@ import os
 import json
 from flask import Flask, render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
-from pdf_extractor import HybridPDFExtractor
-from structured_extractor import StructuredPDFExtractor
+from pdf_extractor import HybridPDFExtractor  # Keep for backward compatibility
+from structured_extractor import StructuredPDFExtractor  # Keep for backward compatibility
+from intelligent_extractor import IntelligentPDFExtractor  # NEW: 7-stage pipeline
 import threading
 from datetime import datetime
 import shutil
@@ -30,8 +31,8 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() == 'pdf'
 
 
-def extract_pdf_task(task_id, pdf_files, lang, preprocess, dpi, extract_images, structured):
-    """Background task for PDF extraction"""
+def extract_pdf_task(task_id, pdf_files, lang, preprocess, dpi, extract_images, mode, ocr_engine):
+    """Background task for PDF extraction using 7-stage intelligent pipeline"""
     global extraction_status
     
     try:
@@ -43,11 +44,13 @@ def extract_pdf_task(task_id, pdf_files, lang, preprocess, dpi, extract_images, 
             'errors': []
         }
         
-        # Choose extractor based on mode
-        if structured:
-            extractor = StructuredPDFExtractor(lang=lang)
-        else:
-            extractor = HybridPDFExtractor(lang=lang)
+        # Use intelligent extractor with selected mode and OCR engine
+        extractor = IntelligentPDFExtractor(
+            lang=lang,
+            mode=mode,
+            dpi=dpi,
+            ocr_engine=ocr_engine
+        )
         
         for i, pdf_path in enumerate(pdf_files, 1):
             try:
@@ -55,78 +58,42 @@ def extract_pdf_task(task_id, pdf_files, lang, preprocess, dpi, extract_images, 
                 extraction_status[task_id]['current'] = i
                 extraction_status[task_id]['current_file'] = filename
                 
-                # Extract based on mode
-                if structured:
-                    # Structured extraction
-                    json_filename = f"{os.path.splitext(filename)[0]}_structure.json"
-                    json_path = os.path.join(app.config['OUTPUT_FOLDER'], json_filename)
-                    
-                    images_dir = None
-                    if extract_images:
-                        images_dir = os.path.join(app.config['OUTPUT_FOLDER'], 
-                                                 f"{os.path.splitext(filename)[0]}_images")
-                    
-                    results = extractor.extract_structured(
-                        pdf_path=pdf_path,
-                        output_json_path=json_path,
-                        extract_images=extract_images,
-                        images_dir=images_dir,
-                        dpi=dpi
-                    )
-                    
-                    # Calculate statistics
-                    total_blocks = sum(len(p['blocks']) for p in results['pages'])
-                    text_blocks = sum(1 for p in results['pages'] for b in p['blocks'] if b['type'] == 'text')
-                    image_blocks = sum(1 for p in results['pages'] for b in p['blocks'] if b['type'] == 'image')
-                    
-                    extraction_status[task_id]['results'].append({
-                        'filename': filename,
-                        'output_file': json_filename,
-                        'json_path': json_filename,
-                        'success': True,
-                        'structured': True,
-                        'total_pages': results['document']['total_pages'],
-                        'total_blocks': total_blocks,
-                        'text_blocks': text_blocks,
-                        'image_blocks': image_blocks,
-                        'images_dir': os.path.basename(images_dir) if images_dir else None
-                    })
-                else:
-                    # Regular hybrid extraction
-                    output_filename = f"{os.path.splitext(filename)[0]}_extracted.txt"
-                    output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
-                    
-                    images_dir = None
-                    if extract_images:
-                        images_dir = os.path.join(app.config['OUTPUT_FOLDER'], 
-                                                 f"{os.path.splitext(filename)[0]}_images")
-                    
-                    results = extractor.extract_from_pdf(
-                        pdf_path=pdf_path,
-                        output_path=output_path,
-                        preprocess=preprocess,
-                        dpi=dpi,
-                        extract_images=extract_images,
-                        images_dir=images_dir
-                    )
-                    
-                    # Calculate statistics
-                    direct_pages = sum(1 for p in results['pages'] if p['method'] == 'direct')
-                    ocr_pages = sum(1 for p in results['pages'] if p['method'] == 'ocr')
-                    
-                    extraction_status[task_id]['results'].append({
-                        'filename': filename,
-                        'output_file': output_filename,
-                        'preview': results['full_text'][:500],
-                        'full_text': results['full_text'],
-                        'success': True,
-                        'structured': False,
-                        'total_pages': results['total_pages'],
-                        'direct_pages': direct_pages,
-                        'ocr_pages': ocr_pages,
-                        'images_count': len(results['images']),
-                        'images_dir': os.path.basename(images_dir) if images_dir else None
-                    })
+                # Prepare output paths
+                json_filename = f"{os.path.splitext(filename)[0]}_intelligent.json"
+                json_path = os.path.join(app.config['OUTPUT_FOLDER'], json_filename)
+                
+                images_dir = None
+                if extract_images:
+                    images_dir = os.path.join(app.config['OUTPUT_FOLDER'], 
+                                             f"{os.path.splitext(filename)[0]}_images")
+                
+                # Extract using intelligent pipeline
+                results = extractor.extract_from_pdf(
+                    pdf_path=pdf_path,
+                    output_json_path=json_path,
+                    extract_images=extract_images,
+                    images_dir=images_dir
+                )
+                
+                # Calculate statistics
+                stage_stats = results.overall_stage_stats
+                total_blocks = results.total_blocks
+                total_images = results.total_images
+                
+                extraction_status[task_id]['results'].append({
+                    'filename': filename,
+                    'output_file': json_filename,
+                    'json_path': json_filename,
+                    'success': True,
+                    'mode': mode,
+                    'total_pages': results.total_pages,
+                    'total_blocks': total_blocks,
+                    'total_images': total_images,
+                    'avg_confidence': round(results.avg_confidence, 2),
+                    'execution_time': round(results.total_execution_time, 2),
+                    'stage_stats': stage_stats,
+                    'images_dir': os.path.basename(images_dir) if images_dir else None
+                })
                 
             except Exception as e:
                 extraction_status[task_id]['errors'].append({
@@ -159,7 +126,8 @@ def upload_files():
         preprocess = request.form.get('preprocess', 'true') == 'true'
         dpi = int(request.form.get('dpi', 300))
         extract_images = request.form.get('extract_images', 'false') == 'true'
-        structured = request.form.get('structured', 'false') == 'true'
+        mode = request.form.get('mode', 'balanced')  # Pipeline mode
+        ocr_engine = request.form.get('ocr_engine', 'easyocr')  # OCR engine
         
         if not files or files[0].filename == '':
             return jsonify({'error': 'No files selected'}), 400
@@ -182,13 +150,13 @@ def upload_files():
         # Start extraction in background
         thread = threading.Thread(
             target=extract_pdf_task,
-            args=(task_id, pdf_files, lang, preprocess, dpi, extract_images, structured)
+            args=(task_id, pdf_files, lang, preprocess, dpi, extract_images, mode, ocr_engine)
         )
         thread.start()
         
         return jsonify({
             'task_id': task_id,
-            'message': f'Processing {len(pdf_files)} PDF file(s)'
+            'message': f'Processing {len(pdf_files)} PDF file(s) in {mode} mode with {ocr_engine.upper()}'
         })
         
     except Exception as e:

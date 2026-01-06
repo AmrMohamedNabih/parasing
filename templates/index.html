@@ -82,12 +82,22 @@
                             </label>
                             <small>Extract embedded images from PDFs</small>
                         </div>
-                        <div class="setting-item checkbox-item">
-                            <label>
-                                <input type="checkbox" id="structured">
-                                <span>Save as Structured JSON</span>
-                            </label>
-                            <small>Preserve PDF structure with blocks and columns</small>
+                        <div class="setting-item">
+                            <label for="mode">Pipeline Mode</label>
+                            <select id="mode" class="input">
+                                <option value="fast">Fast (Stages 1-2, 5-7)</option>
+                                <option value="balanced" selected>Balanced (Stages 1-3, 5-7)</option>
+                                <option value="thorough">Thorough (All 7 Stages)</option>
+                            </select>
+                            <small>Fast: Skip full-page OCR | Balanced: Safety net | Thorough: Maximum accuracy</small>
+                        </div>
+                        <div class="setting-item">
+                            <label for="ocrEngine">OCR Engine</label>
+                            <select id="ocrEngine" class="input">
+                                <option value="easyocr" selected>EasyOCR (Better Accuracy)</option>
+                                <option value="tesseract">Tesseract (Faster)</option>
+                            </select>
+                            <small>EasyOCR: Deep learning, more accurate | Tesseract: Traditional, faster</small>
                         </div>
                     </div>
                 </div>

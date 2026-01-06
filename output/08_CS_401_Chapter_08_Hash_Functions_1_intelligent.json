@@ -1,0 +1,93 @@
+{
+  "document": {
+    "filename": "08_CS_401_Chapter_08_Hash_Functions_1.pdf",
+    "total_pages": 1,
+    "total_blocks": 2,
+    "total_images": 1,
+    "avg_confidence": 0.4,
+    "total_execution_time": 46.19,
+    "stage_stats": {
+      "post_processed": 2
+    },
+    "metadata": {
+      "format": "PDF 1.7",
+      "title": "",
+      "author": "",
+      "subject": "",
+      "keywords": "",
+      "creator": "PDFium",
+      "producer": "PDFium",
+      "creationDate": "D:20260106010803",
+      "modDate": "",
+      "trapped": "",
+      "encryption": null
+    }
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "width": 720.0,
+      "height": 540.0,
+      "columns": 1,
+      "text_coverage": 101.71,
+      "total_confidence": 0.4,
+      "execution_time": 46.19,
+      "stage_stats": {
+        "post_processed": 2
+      },
+      "blocks": [
+        {
+          "block_id": "p1_b0",
+          "bbox": [
+            295.32000732421875,
+            507.53997802734375,
+            663.3380126953125,
+            525.6472778320312
+          ],
+          "text": "1 ©MSA 2025/2026",
+          "confidence": 0.05,
+          "source_stage": "post_processed",
+          "font": "Aptos",
+          "size": 12.0,
+          "direction": "ltr",
+          "rtl_ratio": 0.0,
+          "word_count": 3,
+          "column": 1
+        },
+        {
+          "block_id": "p1_full_ocr",
+          "bbox": [
+            0,
+            0,
+            720.0,
+            540.0
+          ],
+          "text": "Computer Security Chapter 08 Hash Functions, M$A 2025/2026 11",
+          "confidence": 0.75,
+          "source_stage": "post_processed",
+          "font": null,
+          "size": null,
+          "direction": "ltr",
+          "rtl_ratio": 0.0,
+          "word_count": 9,
+          "column": 1
+        }
+      ],
+      "images": [
+        {
+          "image_id": "p1_img0",
+          "bbox": [
+            0.0,
+            -6.103515625e-05,
+            720.0,
+            539.9999389648438
+          ],
+          "image_path": "output/08_CS_401_Chapter_08_Hash_Functions_1_images/page1_img0.jpeg",
+          "ocr_text": "Computer Security Chapter 08 Hash Functions",
+          "confidence": 0.7,
+          "format": "jpeg"
+        }
+      ]
+    }
+  ]
+}

@@ -101,7 +101,8 @@ extractBtn.addEventListener('click', async () => {
     formData.append('dpi', document.getElementById('dpi').value);
     formData.append('preprocess', document.getElementById('preprocess').checked);
     formData.append('extract_images', document.getElementById('extractImages').checked);
-    formData.append('structured', document.getElementById('structured').checked);
+    formData.append('mode', document.getElementById('mode').value);
+    formData.append('ocr_engine', document.getElementById('ocrEngine').value);
 
     try {
         extractBtn.disabled = true;
@@ -212,116 +213,66 @@ function createResultCard(result, success) {
         // Build statistics info
         let statsHtml = '';
 
-        if (result.structured) {
-            // Structured extraction stats
-            statsHtml = `
-                <div class="result-stats">
-                    <span class="stat-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M14 2H6a2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        </svg>
-                        ${result.total_pages} pages
-                    </span>
-                    <span class="stat-item" style="color: var(--success);">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                        </svg>
-                        ${result.total_blocks} blocks
-                    </span>
-                    <span class="stat-item" style="color: var(--primary);">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M4 7h16M4 12h16M4 17h16"></path>
-                        </svg>
-                        ${result.text_blocks} text
-                    </span>
-                    ${result.image_blocks > 0 ? `
-                        <span class="stat-item" style="color: var(--warning);">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                <polyline points="21 15 16 10 5 21"></polyline>
-                            </svg>
-                            ${result.image_blocks} images
-                        </span>
-                    ` : ''}
+        // Intelligent pipeline stats
+        statsHtml = `
+            <div class="result-stats">
+                <span class="stat-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M14 2H6a2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    </svg>
+                    ${result.total_pages} pages
+                </span>
+                <span class="stat-item" style="color: var(--success);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                    </svg>
+                    ${result.total_blocks} blocks
+                </span>
+                <span class="stat-item" style="color: var(--primary);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    ${result.avg_confidence} confidence
+                </span>
+                <span class="stat-item" style="color: var(--warning);">
+                    ⏱️ ${result.execution_time}s
+                </span>
+            </div>
+            ${result.stage_stats ? `
+                <div class="stage-breakdown" style="margin-top: 0.75rem; padding: 0.75rem; background: var(--bg); border-radius: 6px;">
+                    <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-muted);">
+                        Stage Breakdown (${result.mode} mode):
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; font-size: 0.75rem;">
+                        ${result.stage_stats.direct ? `<span style="color: var(--success);">✓ Direct: ${result.stage_stats.direct}</span>` : ''}
+                        ${result.stage_stats.block_ocr ? `<span style="color: var(--warning);">⚡ Block OCR: ${result.stage_stats.block_ocr}</span>` : ''}
+                        ${result.stage_stats.full_page_ocr ? `<span style="color: var(--secondary);">📄 Full OCR: ${result.stage_stats.full_page_ocr}</span>` : ''}
+                        ${result.stage_stats.grid_ocr ? `<span style="color: var(--primary);">🔲 Grid OCR: ${result.stage_stats.grid_ocr}</span>` : ''}
+                        ${result.stage_stats.image_ocr ? `<span style="color: var(--danger);">🖼️ Image OCR: ${result.stage_stats.image_ocr}</span>` : ''}
+                        ${result.stage_stats.post_processed ? `<span style="color: #10b981;">✨ Post-processed: ${result.stage_stats.post_processed}</span>` : ''}
+                    </div>
                 </div>
-            `;
-        } else if (result.total_pages) {
-            // Regular extraction stats
-            statsHtml = `
-                <div class="result-stats">
-                    <span class="stat-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M14 2H6a2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        </svg>
-                        ${result.total_pages} pages
-                    </span>
-                    <span class="stat-item" style="color: var(--success);">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        ${result.direct_pages} direct
-                    </span>
-                    <span class="stat-item" style="color: var(--warning);">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
-                        </svg>
-                        ${result.ocr_pages} OCR
-                    </span>
-                    ${result.images_count > 0 ? `
-                        <span class="stat-item" style="color: var(--primary);">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                <polyline points="21 15 16 10 5 21"></polyline>
-                            </svg>
-                            ${result.images_count} images
-                        </span>
-                    ` : ''}
-                </div>
-            `;
-        }
+            ` : ''}
+        `;
 
         // Build action buttons
-        let actionsHtml = '';
-        if (result.structured) {
-            actionsHtml = `
-                <button class="btn btn-primary btn-small" onclick="viewStructure('${result.json_path}')">
-                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    View Structure
-                </button>
-                <button class="btn btn-secondary btn-small" onclick="downloadFile('${result.output_file}')">
-                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Download JSON
-                </button>
-            `;
-        } else {
-            actionsHtml = `
-                <button class="btn btn-primary btn-small" onclick="downloadFile('${result.output_file}')">
-                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Download
-                </button>
-                <button class="btn btn-secondary btn-small" onclick="viewFullText('${escapeHtml(result.full_text)}')">
-                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                    View Full Text
-                </button>
-            `;
-        }
+        let actionsHtml = `
+            <button class="btn btn-primary btn-small" onclick="viewStructure('${result.json_path}')">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                View Structure
+            </button>
+            <button class="btn btn-secondary btn-small" onclick="downloadFile('${result.output_file}')">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download JSON
+            </button>
+        `;
 
         card.innerHTML = `
             <div class="result-header">

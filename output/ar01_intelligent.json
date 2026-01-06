@@ -1,0 +1,2733 @@
+{
+  "document": {
+    "filename": "ar01.pdf",
+    "total_pages": 6,
+    "total_blocks": 137,
+    "total_images": 11,
+    "avg_confidence": 0.23,
+    "total_execution_time": 250.55,
+    "stage_stats": {
+      "post_processed": 137
+    },
+    "metadata": {
+      "format": "PDF 1.5",
+      "title": "",
+      "author": "96278",
+      "subject": "",
+      "keywords": "",
+      "creator": "Microsoft® Word 2013",
+      "producer": "Microsoft® Word 2013",
+      "creationDate": "D:20230314154212+03'00'",
+      "modDate": "D:20230314154212+03'00'",
+      "trapped": "",
+      "encryption": null
+    }
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "width": 595.3200073242188,
+      "height": 841.9199829101562,
+      "columns": 3,
+      "text_coverage": 174.19,
+      "total_confidence": 0.21,
+      "execution_time": 77.7,
+      "stage_stats": {
+        "post_processed": 35
+      },
+      "blocks": [
+        {
+          "block_id": "p1_b0",
+          "bbox": [
+            72.02400207519531,
+            794.3999633789062,
+            525.8919677734375,
+            806.3999633789062
+          ],
+          "text": "Jordan- 02690787167737 www. bassmaah. com/exams",
+          "confidence": 0.14,
+          "source_stage": "post_processed",
+          "font": "Calibri,Bold",
+          "size": 12.0,
+          "direction": "ltr",
+          "rtl_ratio": 0.0,
+          "word_count": 5,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b1",
+          "bbox": [
+            509.739990234375,
+            43.13999938964844,
+            541.8399658203125,
+            56.52000045776367
+          ],
+          "text": "المنهاج",
+          "confidence": 0.2,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 12.0,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 1,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b2",
+          "bbox": [
+            511.17999267578125,
+            59.81999206542969,
+            543.7599487304688,
+            73.19998931884766
+          ],
+          "text": "المصري",
+          "confidence": 0.2,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 12.0,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 1,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b3",
+          "bbox": [
+            405.42999267578125,
+            94.92500305175781,
+            523.4500732421875,
+            129.64999389648438
+          ],
+          "text": "االجابات نهاية الصفحة",
+          "confidence": 0.05,
+          "source_stage": "post_processed",
+          "font": "Calibri",
+          "size": 15.0,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 3,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b4",
+          "bbox": [
+            446.3800048828125,
+            148.68380737304688,
+            547.92626953125,
+            171.02841186523438
+          ],
+          "text": "االسئ لة: ",
+          "confidence": 0.04,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 20.040000915527344,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 2,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b5",
+          "bbox": [
+            170.77999877929688,
+            188.73619079589844,
+            523.5233154296875,
+            207.61160278320312
+          ],
+          "text": "ا والا: القراءة من الكتاب ذي (: الموضوعات المتعددة اربع )درجات",
+          "confidence": 0.2,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.92,
+          "word_count": 11,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b6",
+          "bbox": [
+            353.7099914550781,
+            216.21617126464844,
+            523.5359497070312,
+            234.01156616210938
+          ],
+          "text": "\" من موضوع نور والجغرافيا\"",
+          "confidence": 0.08,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.91,
+          "word_count": 5,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b7",
+          "bbox": [
+            67.7040023803711,
+            242.73619079589844,
+            528.1050415039062,
+            260.5315856933594
+          ],
+          "text": "\" قالت معلمة الجغرافيا: ربما كانت \"نور\" تعاني مشكلة ما؛ لهذا يجب علينا ان نمد لها يد",
+          "confidence": 0.28,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.94,
+          "word_count": 17,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b8",
+          "bbox": [
+            329.8299865722656,
+            261.126220703125,
+            527.9898681640625,
+            278.9216003417969
+          ],
+          "text": "المساعدة؛ حتى ال يضيع مستقبلها. \"",
+          "confidence": 0.08,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.93,
+          "word_count": 6,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b9",
+          "bbox": [
+            304.6099853515625,
+            279.606201171875,
+            528.0968627929688,
+            297.4015808105469
+          ],
+          "text": "تخير االجابة الصحيحة مما بين القوسين: ",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.97,
+          "word_count": 6,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b10",
+          "bbox": [
+            218.69000244140625,
+            297.9661865234375,
+            546.09375,
+            315.7615661621094
+          ],
+          "text": "1. \" معنى تعاني. . . : \". . . . . . ",
+          "confidence": 0.15,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "ltr",
+          "rtl_ratio": 0.26,
+          "word_count": 13,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b11",
+          "bbox": [
+            150.5,
+            316.3262023925781,
+            509.96331787109375,
+            334.12158203125
+          ],
+          "text": "ا- تقاسي ب- تخشى ج- تتحاشى د- تكتم",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.85,
+          "word_count": 8,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b12",
+          "bbox": [
+            348.6700134277344,
+            334.8061828613281,
+            546.09375,
+            352.6015625
+          ],
+          "text": "2. . . . \"مضاد \"المساعدة",
+          "confidence": 0.09,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.38,
+          "word_count": 6,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b13",
+          "bbox": [
+            139.10000610351562,
+            353.16619873046875,
+            509.96331787109375,
+            370.9615783691406
+          ],
+          "text": "ا- العتداء ب- االستغناء ج- الخذالن د- االحباط",
+          "confidence": 0.14,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.89,
+          "word_count": 8,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b14",
+          "bbox": [
+            302.80999755859375,
+            371.52618408203125,
+            546.09375,
+            389.3215637207031
+          ],
+          "text": "3. . . . دافع المعلمة للمقولة السابقة",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.6,
+          "word_count": 8,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b15",
+          "bbox": [
+            190.49000549316406,
+            390.0061950683594,
+            509.96331787109375,
+            407.80157470703125
+          ],
+          "text": "ا- استجواب المديرة لها ب- حديث المدرسة",
+          "confidence": 0.11,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.94,
+          "word_count": 7,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b16",
+          "bbox": [
+            161.5399932861328,
+            408.3662109375,
+            509.94891357421875,
+            426.1615905761719
+          ],
+          "text": "ج- الغيرة على العلم د- حرصها على المتفوقين",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.94,
+          "word_count": 8,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b17",
+          "bbox": [
+            93.14399719238281,
+            426.7261962890625,
+            546.09375,
+            444.5215759277344
+          ],
+          "text": "4. تعمدت نور عدم وضع الحدود الداخلية بين االقطار العربية ل. . . ",
+          "confidence": 0.22,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.69,
+          "word_count": 13,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b18",
+          "bbox": [
+            51.36000061035156,
+            445.2261962890625,
+            509.96331787109375,
+            463.0215759277344
+          ],
+          "text": "ا- تثير االنتباه ب- تشتهر بين زميالتها ج- عدم اقتناعها بها د- ظروف خاصة",
+          "confidence": 0.23,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.93,
+          "word_count": 14,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b19",
+          "bbox": [
+            485.6199951171875,
+            463.4661865234375,
+            509.9735412597656,
+            481.2615661621094
+          ],
+          "text": "بها",
+          "confidence": 0.2,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 1,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b20",
+          "bbox": [
+            293.0899963378906,
+            489.9862060546875,
+            541.536865234375,
+            544.5016479492188
+          ],
+          "text": ")ثانيا: القصة (عقبة بن نافع): (اربع درجات",
+          "confidence": 0.11,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.83,
+          "word_count": 7,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b21",
+          "bbox": [
+            420.30999755859375,
+            553.2261962890625,
+            546.0096435546875,
+            571.0216064453125
+          ],
+          "text": ": اختر من بين القوسين",
+          "confidence": 0.06,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.94,
+          "word_count": 5,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b22",
+          "bbox": [
+            183.13999938964844,
+            571.586181640625,
+            528.09375,
+            589.381591796875
+          ],
+          "text": "1 ) اول جيش مكون من العرب والبربر كان في معركة. . . ",
+          "confidence": 0.18,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.69,
+          "word_count": 13,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b23",
+          "bbox": [
+            58.79999923706055,
+            589.9462280273438,
+            509.96331787109375,
+            607.7416381835938
+          ],
+          "text": "ا- ودان ب- الزاب ج- السوس االدنى د- السوس االقصى",
+          "confidence": 0.16,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.9,
+          "word_count": 10,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b24",
+          "bbox": [
+            356.2300109863281,
+            608.4262084960938,
+            528.09375,
+            626.2216186523438
+          ],
+          "text": "2 ) القوط هم سكان. . . ",
+          "confidence": 0.09,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.42,
+          "word_count": 7,
+          "column": 3
+        },
+        {
+          "block_id": "p1_b25",
+          "bbox": [
+            102.26000213623047,
+            626.8162231445312,
+            509.96331787109375,
+            644.6116333007812
+          ],
+          "text": "ا- القيروان ب- الشام ج- االندلس د- المغرب",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 8,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b26",
+          "bbox": [
+            229.72999572753906,
+            645.1762084960938,
+            528.09375,
+            662.9716186523438
+          ],
+          "text": "3 ) فتح المسلمون في طريقهم الى طنجة مدينة. . . ",
+          "confidence": 0.15,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.7,
+          "word_count": 11,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b27",
+          "bbox": [
+            105.9800033569336,
+            663.6561889648438,
+            509.96331787109375,
+            681.4515991210938
+          ],
+          "text": "ا- القيروان ب- اورانوس ج- تهودة د- تيهرت",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 8,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b28",
+          "bbox": [
+            192.41000366210938,
+            682.0161743164062,
+            528.09375,
+            699.8115844726562
+          ],
+          "text": "4 ) تغيرت وجهة عقبة من االندلس الى السوس بسبب. . . ",
+          "confidence": 0.16,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.71,
+          "word_count": 12,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b29",
+          "bbox": [
+            63.98400115966797,
+            700.0161743164062,
+            509.96331787109375,
+            718.0515747070312
+          ],
+          "text": "ا- الكاهنة ب- جريجريوس ج- يليان الغماري د- كٌسيلة بن لمزم",
+          "confidence": 0.17,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.91,
+          "word_count": 11,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b30",
+          "bbox": [
+            123.13999938964844,
+            53.58000183105469,
+            471.19598388671875,
+            68.4000015258789
+          ],
+          "text": "اسم المادة: اللغة العربية االختبار العاشر الفصل الثاني 0200 - 0202",
+          "confidence": 0.2,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 12.0,
+          "direction": "rtl",
+          "rtl_ratio": 0.82,
+          "word_count": 11,
+          "column": 2
+        },
+        {
+          "block_id": "p1_b20_ocr",
+          "bbox": [
+            293.0899963378906,
+            489.9862060546875,
+            541.536865234375,
+            544.5016479492188
+          ],
+          "text": "عقبة بن نافع: ااربع درجات ثانيًا: القصة",
+          "confidence": 0.8,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.94,
+          "word_count": 7,
+          "column": 3
+        },
+        {
+          "block_id": "p1_full_ocr",
+          "bbox": [
+            0,
+            0,
+            595.3200073242188,
+            841.9199829101562
+          ],
+          "text": "المنهاج 2023-2022 الفصل الاختبار العاشر اللغة العربية المادة عم لفتك لتبدع الاجابات نهاية الصفحة الاسئلة اولًا: القراءة من الكتاب ذى الموضوعات المتعددة: لاربع درجات نور والجغرافيا \" من موضوع تعاني مشكلة ما; لهذا يجب علينا ان نمد لهايد قالت معلمة الجغرافيا: ربما كانت \"نور المساعدة; حتى لا يضيع مستقبلها \" تخير الاجابة الصحيحة ممابين القوسين: 1. معنى \" تعاني \": تكتم تتحاشى ب- ا- 2. مضاد \" المساعدة\" د- الاحباط ج- ب- الاستغناء ا- لاعتداء 3. دافع المعلمة للمقولة السابقة ب- حديث المدرسة ا- استجواب المديرة لها د- حرصها على المتفو ج- الغيرة على العلم وضع الحدود الداخلية بين الاقطار العربية _4. تعمدت د- ظروف خاصة جء عدم اقتناعها بها بء تشتهر بين زميلاتها ا- تثير الانتباه بها / ثانيًا: القصة ا عقبة بن نافع: لاربع درجات اختر من بين القوسين: في 1( اول جيش مكون من العرب والبربر ج- السوس ب- الزاب ا- ودان ٥٥ ٥٥ ٥2( القوط هم سكان د- المغرب الاندلس ( ج- ب- الشام ا- القيروان المسلمون في طريقهم الى طنجة مدينة (3د- تيهرت ج- تهودة ب- ا- القيروان بسبب 4( تغيرت وجهة عقبة من الاندلس الى د- خسيلة بن ج- يليان ب- جريجريوس ا- الكا Jordan- 00962787167737 www bassmaah com exams الثاني اسم المصري تخشى تقاسي الخذلان قين عدم نور معركة كان الاقصى الادنى السوس فتح اورانوس السوس اهنة لمزم الغماري",
+          "confidence": 0.75,
+          "source_stage": "post_processed",
+          "font": null,
+          "size": null,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 216,
+          "column": 2
+        },
+        {
+          "block_id": "p1_img0_text",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "source_stage": "post_processed",
+          "font": null,
+          "size": null,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 3,
+          "column": 2
+        },
+        {
+          "block_id": "p1_img5_text",
+          "bbox": [
+            37.560001373291016,
+            37.559967041015625,
+            96.0,
+            89.27996826171875
+          ],
+          "text": "تلومك لتبدع",
+          "confidence": 0.7,
+          "source_stage": "post_processed",
+          "font": null,
+          "size": null,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 2,
+          "column": 1
+        }
+      ],
+      "images": [
+        {
+          "image_id": "p1_img0",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "image_path": "output/ar01_images/page1_img0.png",
+          "ocr_text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "format": "png"
+        },
+        {
+          "image_id": "p1_img1",
+          "bbox": [
+            503.2799987792969,
+            42.600006103515625,
+            551.6400146484375,
+            82.32000732421875
+          ],
+          "image_path": "output/ar01_images/page1_img1.png",
+          "ocr_text": "",
+          "confidence": 0.0,
+          "format": "png"
+        },
+        {
+          "image_id": "p1_img2",
+          "bbox": [
+            501.7200012207031,
+            38.879966735839844,
+            549.719970703125,
+            65.27996826171875
+          ],
+          "image_path": "output/ar01_images/page1_img2.png",
+          "ocr_text": "",
+          "confidence": 0.0,
+          "format": "png"
+        },
+        {
+          "image_id": "p1_img3",
+          "bbox": [
+            503.1600036621094,
+            55.559959411621094,
+            551.6400146484375,
+            81.9599609375
+          ],
+          "image_path": "output/ar01_images/page1_img3.png",
+          "ocr_text": "",
+          "confidence": 0.0,
+          "format": "png"
+        },
+        {
+          "image_id": "p1_img4",
+          "bbox": [
+            535.7999877929688,
+            55.559959411621094,
+            558.3599853515625,
+            81.9599609375
+          ],
+          "image_path": "output/ar01_images/page1_img4.png",
+          "ocr_text": "",
+          "confidence": 0.0,
+          "format": "png"
+        },
+        {
+          "image_id": "p1_img5",
+          "bbox": [
+            37.560001373291016,
+            37.559967041015625,
+            96.0,
+            89.27996826171875
+          ],
+          "image_path": "output/ar01_images/page1_img5.png",
+          "ocr_text": "تلومك لتبدع",
+          "confidence": 0.7,
+          "format": "png"
+        }
+      ]
+    },
+    {
+      "page_number": 2,
+      "width": 595.3200073242188,
+      "height": 841.9199829101562,
+      "columns": 1,
+      "text_coverage": 74.53,
+      "total_confidence": 0.18,
+      "execution_time": 32.71,
+      "stage_stats": {
+        "post_processed": 31
+      },
+      "blocks": [
+        {
+          "block_id": "p2_b0",
+          "bbox": [
+            72.02400207519531,
+            794.3999633789062,
+            525.8919677734375,
+            806.3999633789062
+          ],
+          "text": "Jordan- 02690787167737 www. bassmaah. com/exams",
+          "confidence": 0.14,
+          "source_stage": "post_processed",
+          "font": "Calibri,Bold",
+          "size": 12.0,
+          "direction": "ltr",
+          "rtl_ratio": 0.0,
+          "word_count": 5,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b1",
+          "bbox": [
+            312.1700134277344,
+            83.85618591308594,
+            523.536865234375,
+            104.0516128540039
+          ],
+          "text": "(: ثالث اا: القراءة المتحررة اربع )درجات",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b2",
+          "bbox": [
+            36.47999954223633,
+            104.52497863769531,
+            528.0549926757812,
+            138.52999877929688
+          ],
+          "text": "( \"من يصبر على االذى يرفعه هللا،\" هكذا قالت المعلمة لتلميذتها التي كانت تسعى بين الطالبات بالنصيحة وتقول لهن: ان تطعن هللا ورسوله يدخلكن الجنة. وبينما هي على هذا الطريق الصحيح اذا بطالبة تسيء",
+          "confidence": 0.54,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.0,
+          "direction": "rtl",
+          "rtl_ratio": 0.97,
+          "word_count": 34,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b3",
+          "bbox": [
+            77.66400146484375,
+            139.08497619628906,
+            527.8892822265625,
+            155.80996704101562
+          ],
+          "text": "اليها، فحزنت البنت الصالحة وذهبت الى المعلمة تشتكي لها. . فقالت لها هذه الكلمة الجميلة). ",
+          "confidence": 0.23,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.0,
+          "direction": "rtl",
+          "rtl_ratio": 0.95,
+          "word_count": 15,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b4",
+          "bbox": [
+            309.04998779296875,
+            156.33616638183594,
+            541.5233154296875,
+            174.13156127929688
+          ],
+          "text": "ا- تخير: االجابة الصحيحة مما بين القوسين",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.94,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b5",
+          "bbox": [
+            287.80999755859375,
+            174.8162078857422,
+            509.9737548828125,
+            192.61160278320312
+          ],
+          "text": "1. مضاد \"تسيء. . . : \"",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "ltr",
+          "rtl_ratio": 0.22,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b6",
+          "bbox": [
+            67.8239974975586,
+            193.1761932373047,
+            491.96331787109375,
+            210.97158813476562
+          ],
+          "text": "ا- تحسن ب- تذم ج- تبتعد عنها د- كل ذلك",
+          "confidence": 0.15,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.86,
+          "word_count": 10,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b7",
+          "bbox": [
+            284.3299865722656,
+            211.5361785888672,
+            509.9737548828125,
+            229.33157348632812
+          ],
+          "text": "2. معنى \"يصبر. . . : \"",
+          "confidence": 0.3,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "ltr",
+          "rtl_ratio": 0.21,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b8",
+          "bbox": [
+            73.46399688720703,
+            230.0161590576172,
+            509.96331787109375,
+            247.81155395507812
+          ],
+          "text": "ا- يبطئ ب- يتحمل ج- يجزع د- يتمهل",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.85,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b9",
+          "bbox": [
+            141.86000061035156,
+            248.37620544433594,
+            541.5780029296875,
+            266.1716003417969
+          ],
+          "text": "ب- ضع عالمة (  ) ( امام العبارة الصحيحة، وعالمة  ) امام العبارة: الخطا",
+          "confidence": 0.24,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.86,
+          "word_count": 16,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b10",
+          "bbox": [
+            239.57000732421875,
+            266.76617431640625,
+            528.09375,
+            284.5615539550781
+          ],
+          "text": "1. الصبر من اعظم االخالق. (  )",
+          "confidence": 0.3,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.75,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b11",
+          "bbox": [
+            241.49000549316406,
+            285.126220703125,
+            528.09375,
+            302.9216003417969
+          ],
+          "text": "2. نصح االخرين ليس من واجباتي. (  )",
+          "confidence": 0.15,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.79,
+          "word_count": 9,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b12",
+          "bbox": [
+            422.5899963378906,
+            337.92620849609375,
+            523.460693359375,
+            355.7215881347656
+          ],
+          "text": ": رابعا: النصوص",
+          "confidence": 0.04,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.85,
+          "word_count": 3,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b13",
+          "bbox": [
+            282.6499938964844,
+            364.3262023925781,
+            523.5487670898438,
+            382.12158203125
+          ],
+          "text": "( من نص تواضع سيدنا عمر( )اربع: )درجات",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.84,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b14",
+          "bbox": [
+            190.61000061035156,
+            390.84619140625,
+            527.8436889648438,
+            408.6415710449219
+          ],
+          "text": "امنت لما اقمت العدل بينهم فنمت نوم قرير العين هانيها",
+          "confidence": 0.16,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 10,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b15",
+          "bbox": [
+            191.69000244140625,
+            409.2062072753906,
+            528.0552368164062,
+            429.0415954589844
+          ],
+          "text": "يا رافعا راية الشورى وحارسها جزاك ربك خيراا عن محبيها",
+          "confidence": 0.16,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 10,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b16",
+          "bbox": [
+            309.04998779296875,
+            427.5661926269531,
+            527.8963012695312,
+            463.861572265625
+          ],
+          "text": ": تخير االجابة الصحيحة مما بين القوسين",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.97,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b17",
+          "bbox": [
+            309.2900085449219,
+            464.42620849609375,
+            528.09375,
+            482.2215881347656
+          ],
+          "text": "1 - مرادف \"أقمت\": . . . ",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "ltr",
+          "rtl_ratio": 0.24,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b18",
+          "bbox": [
+            141.13999938964844,
+            482.78619384765625,
+            509.96331787109375,
+            500.5815734863281
+          ],
+          "text": "ا- انشات ب- اسست ج- حققت د- عظمت",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.84,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b19",
+          "bbox": [
+            288.7699890136719,
+            501.14617919921875,
+            528.09375,
+            518.9415893554688
+          ],
+          "text": "2 - مضاد \"هانيها. . . \"",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.34,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b20",
+          "bbox": [
+            140.3000030517578,
+            519.6261596679688,
+            509.96331787109375,
+            537.4215698242188
+          ],
+          "text": "ا- حزينها ب- شقيها ج- ناسيها د- كارهها",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.87,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b21",
+          "bbox": [
+            247.49000549316406,
+            537.9862060546875,
+            528.09375,
+            557.8215942382812
+          ],
+          "text": "3 - \"جزاك ربك خيراا \" اسلوب. . . : غرضه",
+          "confidence": 0.14,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.66,
+          "word_count": 11,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b22",
+          "bbox": [
+            139.33999633789062,
+            556.34619140625,
+            509.96331787109375,
+            574.1416015625
+          ],
+          "text": "ا- الدعاء ب-التمني ج– الرجاء د- التعظيم",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b23",
+          "bbox": [
+            301.010009765625,
+            574.8262329101562,
+            528.09375,
+            592.6216430664062
+          ],
+          "text": "4 - ربط الشاعر االحساس باالمن ب. . . ",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.71,
+          "word_count": 9,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b24",
+          "bbox": [
+            112.45999908447266,
+            593.0662231445312,
+            509.96331787109375,
+            610.8616333007812
+          ],
+          "text": "ا- غياب الشورى ب- اقامة العدل ج- انتشار الحب د- النوم العميق",
+          "confidence": 0.19,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.92,
+          "word_count": 12,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b25",
+          "bbox": [
+            301.7300109863281,
+            645.8961791992188,
+            523.4571533203125,
+            663.6915893554688
+          ],
+          "text": "(: خامسا: القواعد النحوية اربع )درجات",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 6,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b26",
+          "bbox": [
+            303.1700134277344,
+            672.4161987304688,
+            523.3050537109375,
+            690.2116088867188
+          ],
+          "text": ": اختر االجابة الصحيحة مما بينة القوسين",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.97,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b27",
+          "bbox": [
+            269.2099914550781,
+            690.7761840820312,
+            505.53375244140625,
+            708.5715942382812
+          ],
+          "text": "1. متى. . . الخير. تنالوا محبة الناس",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.61,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b28",
+          "bbox": [
+            140.3000030517578,
+            709.2561645507812,
+            487.5368957519531,
+            727.0515747070312
+          ],
+          "text": "ا- تفعل ب– تفعال ج– تفعلوا د- تفعلون",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.86,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p2_b29",
+          "bbox": [
+            83.90399932861328,
+            727.6121826171875,
+            505.53375244140625,
+            763.7676391601562
+          ],
+          "text": "2. رايت الحق منتصراا. . . ، اعراب منتصراا ا- نعت ب– مفعول به اول ج– مفعول به ثان د- حال",
+          "confidence": 0.3,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.78,
+          "word_count": 21,
+          "column": 1
+        },
+        {
+          "block_id": "p2_img0_text",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "source_stage": "post_processed",
+          "font": null,
+          "size": null,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 3,
+          "column": 1
+        }
+      ],
+      "images": [
+        {
+          "image_id": "p2_img0",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "image_path": "output/ar01_images/page2_img0.png",
+          "ocr_text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "format": "png"
+        }
+      ]
+    },
+    {
+      "page_number": 3,
+      "width": 595.3200073242188,
+      "height": 841.9199829101562,
+      "columns": 1,
+      "text_coverage": 144.72,
+      "total_confidence": 0.36,
+      "execution_time": 35.84,
+      "stage_stats": {
+        "post_processed": 6
+      },
+      "blocks": [
+        {
+          "block_id": "p3_b0",
+          "bbox": [
+            72.02400207519531,
+            794.3999633789062,
+            525.8919677734375,
+            806.3999633789062
+          ],
+          "text": "Jordan- 02690787167737 www. bassmaah. com/exams",
+          "confidence": 0.14,
+          "source_stage": "post_processed",
+          "font": "Calibri,Bold",
+          "size": 12.0,
+          "direction": "ltr",
+          "rtl_ratio": 0.0,
+          "word_count": 5,
+          "column": 1
+        },
+        {
+          "block_id": "p3_b1",
+          "bbox": [
+            168.3800048828125,
+            67.87620544433594,
+            505.53375244140625,
+            86.63162994384766
+          ],
+          "text": "3. . . . يُراقب الطالب في االمتحان، اعراب الطالب",
+          "confidence": 0.15,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.72,
+          "word_count": 10,
+          "column": 1
+        },
+        {
+          "block_id": "p3_b2",
+          "bbox": [
+            83.54399871826172,
+            86.25621032714844,
+            487.5233154296875,
+            104.0516128540039
+          ],
+          "text": "ا- نائب فاعل ب– مفعول به ج– مفعول به د- خبر",
+          "confidence": 0.16,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 11,
+          "column": 1
+        },
+        {
+          "block_id": "p3_b3",
+          "bbox": [
+            86.78399658203125,
+            104.61619567871094,
+            505.53375244140625,
+            140.65158081054688
+          ],
+          "text": "4. عند بناء الفعل قال للمجهول يصير ا- قول ب– قلت ج– قالت د- قيل",
+          "confidence": 0.24,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 15,
+          "column": 1
+        },
+        {
+          "block_id": "p3_full_ocr",
+          "bbox": [
+            0,
+            0,
+            595.3200073242188,
+            841.9199829101562
+          ],
+          "text": "3. يراقب الطلاب في الامتحان اعراب الطلاب ج_ مفعول ب_ مفعول به ا- نائب فاعل 4. عند بناء الفعل قال للمجهول يصير ج_ قالت با- قول نلومك Jordan- 00962787167737 www bassmaah com exams خبر قيل قلت لتبدع",
+          "confidence": 0.75,
+          "source_stage": "post_processed",
+          "font": null,
+          "size": null,
+          "direction": "mixed",
+          "rtl_ratio": 0.69,
+          "word_count": 37,
+          "column": 1
+        },
+        {
+          "block_id": "p3_img0_text",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "source_stage": "post_processed",
+          "font": null,
+          "size": null,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 3,
+          "column": 1
+        }
+      ],
+      "images": [
+        {
+          "image_id": "p3_img0",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "image_path": "output/ar01_images/page3_img0.png",
+          "ocr_text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "format": "png"
+        }
+      ]
+    },
+    {
+      "page_number": 4,
+      "width": 595.3200073242188,
+      "height": 841.9199829101562,
+      "columns": 1,
+      "text_coverage": 70.1,
+      "total_confidence": 0.16,
+      "execution_time": 36.4,
+      "stage_stats": {
+        "post_processed": 28
+      },
+      "blocks": [
+        {
+          "block_id": "p4_b0",
+          "bbox": [
+            72.02400207519531,
+            794.3999633789062,
+            525.8919677734375,
+            806.3999633789062
+          ],
+          "text": "Jordan- 02690787167737 www. bassmaah. com/exams",
+          "confidence": 0.14,
+          "source_stage": "post_processed",
+          "font": "Calibri,Bold",
+          "size": 12.0,
+          "direction": "ltr",
+          "rtl_ratio": 0.0,
+          "word_count": 5,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b1",
+          "bbox": [
+            447.70001220703125,
+            68.02377319335938,
+            523.5488891601562,
+            90.36837005615234
+          ],
+          "text": ": االجابات",
+          "confidence": 0.2,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 20.040000915527344,
+          "direction": "rtl",
+          "rtl_ratio": 0.89,
+          "word_count": 2,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b2",
+          "bbox": [
+            170.77999877929688,
+            98.85618591308594,
+            543.3369140625,
+            134.89157104492188
+          ],
+          "text": "ا والا: القراءة من الكتاب ذي (: الموضوعات المتعددة اربع )درجات",
+          "confidence": 0.2,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.92,
+          "word_count": 11,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b3",
+          "bbox": [
+            353.7099914550781,
+            143.49620056152344,
+            523.5359497070312,
+            161.29159545898438
+          ],
+          "text": "\" من موضوع نور والجغرافيا\"",
+          "confidence": 0.08,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.91,
+          "word_count": 5,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b4",
+          "bbox": [
+            67.7040023803711,
+            170.0161590576172,
+            528.1050415039062,
+            187.81155395507812
+          ],
+          "text": "\" قالت معلمة الجغرافيا: ربما كانت \"نور\" تعاني مشكلة ما؛ لهذا يجب علينا ان نمد لها يد",
+          "confidence": 0.28,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.94,
+          "word_count": 17,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b5",
+          "bbox": [
+            329.8299865722656,
+            188.37620544433594,
+            527.9898681640625,
+            206.17160034179688
+          ],
+          "text": "المساعدة؛ حتى ال يضيع مستقبلها. \"",
+          "confidence": 0.08,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.93,
+          "word_count": 6,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b6",
+          "bbox": [
+            304.6099853515625,
+            206.85618591308594,
+            528.0968627929688,
+            224.65158081054688
+          ],
+          "text": "تخير االجابة الصحيحة مما بين القوسين: ",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.97,
+          "word_count": 6,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b7",
+          "bbox": [
+            218.69000244140625,
+            225.21617126464844,
+            546.09375,
+            243.01156616210938
+          ],
+          "text": "5. \" معنى تعاني. . . : \". . . . . . ",
+          "confidence": 0.15,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "ltr",
+          "rtl_ratio": 0.26,
+          "word_count": 13,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b8",
+          "bbox": [
+            150.5,
+            243.57615661621094,
+            509.96331787109375,
+            261.3715515136719
+          ],
+          "text": "ا- تقاسي ب- تخشى ج- تتحاشى د- تكتم",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.85,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b9",
+          "bbox": [
+            348.6700134277344,
+            262.086181640625,
+            546.09375,
+            279.8815612792969
+          ],
+          "text": "6. . . . \"مضاد \"المساعدة",
+          "confidence": 0.09,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.38,
+          "word_count": 6,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b10",
+          "bbox": [
+            139.10000610351562,
+            280.4461669921875,
+            509.96331787109375,
+            298.2415466308594
+          ],
+          "text": "ا- العتداء ب- االستغناء ج- الخذالن د- االحباط",
+          "confidence": 0.14,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.89,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b11",
+          "bbox": [
+            302.80999755859375,
+            298.80621337890625,
+            546.09375,
+            316.6015930175781
+          ],
+          "text": "7. . . . دافع المعلمة للمقولة السابقة",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.6,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b12",
+          "bbox": [
+            190.49000549316406,
+            317.28619384765625,
+            509.96331787109375,
+            335.0815734863281
+          ],
+          "text": "ا- استجواب المديرة لها ب- حديث المدرسة",
+          "confidence": 0.11,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.94,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b13",
+          "bbox": [
+            161.5399932861328,
+            335.6462097167969,
+            509.94891357421875,
+            353.44158935546875
+          ],
+          "text": "ج- الغيرة على العلم د- حرصها على المتفوقين",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.94,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b14",
+          "bbox": [
+            93.14399719238281,
+            354.0061950683594,
+            546.09375,
+            371.80157470703125
+          ],
+          "text": "8. تعمدت نور عدم وضع الحدود الداخلية بين االقطار العربية ل. . . ",
+          "confidence": 0.22,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.69,
+          "word_count": 13,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b15",
+          "bbox": [
+            51.36000061035156,
+            372.4862060546875,
+            509.96331787109375,
+            390.2815856933594
+          ],
+          "text": "ا- تثير االنتباه ب- تشتهر بين زميالتها ج- عدم اقتناعها بها د- ظروف خاصة",
+          "confidence": 0.23,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.93,
+          "word_count": 14,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b16",
+          "bbox": [
+            485.6199951171875,
+            390.7261962890625,
+            509.9735412597656,
+            408.5215759277344
+          ],
+          "text": "بها",
+          "confidence": 0.2,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 1,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b17",
+          "bbox": [
+            293.0899963378906,
+            417.2461853027344,
+            541.536865234375,
+            471.7815856933594
+          ],
+          "text": ")ثانيا: القصة (عقبة بن نافع): (اربع درجات",
+          "confidence": 0.11,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.83,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b18",
+          "bbox": [
+            420.30999755859375,
+            480.5061950683594,
+            546.0096435546875,
+            498.30157470703125
+          ],
+          "text": ": اختر من بين القوسين",
+          "confidence": 0.06,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.94,
+          "word_count": 5,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b19",
+          "bbox": [
+            183.13999938964844,
+            498.8662109375,
+            528.09375,
+            516.66162109375
+          ],
+          "text": "5 ) اول جيش مكون من العرب والبربر كان في معركة. . . ",
+          "confidence": 0.18,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.69,
+          "word_count": 13,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b20",
+          "bbox": [
+            58.79999923706055,
+            517.2261962890625,
+            509.96331787109375,
+            535.0216064453125
+          ],
+          "text": "ا- ودان ب- الزاب ج- السوس االدنى د- السوس االقصى",
+          "confidence": 0.16,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.9,
+          "word_count": 10,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b21",
+          "bbox": [
+            356.2300109863281,
+            535.7062377929688,
+            528.09375,
+            553.5016479492188
+          ],
+          "text": "6 ) القوط هم سكان. . . ",
+          "confidence": 0.09,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.42,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b22",
+          "bbox": [
+            102.26000213623047,
+            554.0662231445312,
+            509.96331787109375,
+            571.8616333007812
+          ],
+          "text": "ا- القيروان ب- الشام ج- االندلس د- المغرب",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b23",
+          "bbox": [
+            229.72999572753906,
+            572.4262084960938,
+            528.09375,
+            590.2216186523438
+          ],
+          "text": "7 ) فتح المسلمون في طريقهم الى طنجة مدينة. . . ",
+          "confidence": 0.15,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.7,
+          "word_count": 11,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b24",
+          "bbox": [
+            105.9800033569336,
+            590.7861938476562,
+            509.96331787109375,
+            608.5816040039062
+          ],
+          "text": "ا- القيروان ب- اورانوس ج- تهودة د- تيهرت",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b25",
+          "bbox": [
+            192.41000366210938,
+            609.2962036132812,
+            528.09375,
+            627.0916137695312
+          ],
+          "text": "8 ) تغيرت وجهة عقبة من االندلس الى السوس بسبب. . . ",
+          "confidence": 0.16,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.71,
+          "word_count": 12,
+          "column": 1
+        },
+        {
+          "block_id": "p4_b26",
+          "bbox": [
+            63.98400115966797,
+            627.2962036132812,
+            509.96331787109375,
+            645.3316040039062
+          ],
+          "text": "ا- الكاهنة ب- جريجريوس ج- يليان الغماري د- كٌسيلة بن لمزم",
+          "confidence": 0.17,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.91,
+          "word_count": 11,
+          "column": 1
+        },
+        {
+          "block_id": "p4_img0_text",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "source_stage": "post_processed",
+          "font": null,
+          "size": null,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 3,
+          "column": 1
+        }
+      ],
+      "images": [
+        {
+          "image_id": "p4_img0",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "image_path": "output/ar01_images/page4_img0.png",
+          "ocr_text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "format": "png"
+        }
+      ]
+    },
+    {
+      "page_number": 5,
+      "width": 595.3200073242188,
+      "height": 841.9199829101562,
+      "columns": 1,
+      "text_coverage": 67.87,
+      "total_confidence": 0.18,
+      "execution_time": 28.4,
+      "stage_stats": {
+        "post_processed": 26
+      },
+      "blocks": [
+        {
+          "block_id": "p5_b0",
+          "bbox": [
+            72.02400207519531,
+            794.3999633789062,
+            525.8919677734375,
+            806.3999633789062
+          ],
+          "text": "Jordan- 02690787167737 www. bassmaah. com/exams",
+          "confidence": 0.14,
+          "source_stage": "post_processed",
+          "font": "Calibri,Bold",
+          "size": 12.0,
+          "direction": "ltr",
+          "rtl_ratio": 0.0,
+          "word_count": 5,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b1",
+          "bbox": [
+            312.1700134277344,
+            83.85618591308594,
+            523.536865234375,
+            104.0516128540039
+          ],
+          "text": "(: ثالث اا: القراءة المتحررة اربع )درجات",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b2",
+          "bbox": [
+            36.47999954223633,
+            104.52497863769531,
+            528.0549926757812,
+            138.52999877929688
+          ],
+          "text": "( \"من يصبر على االذى يرفعه هللا،\" هكذا قالت المعلمة لتلميذتها التي كانت تسعى بين الطالبات بالنصيحة وتقول لهن: ان تطعن هللا ورسوله يدخلكن الجنة. وبينما هي على هذا الطريق الصحيح اذا بطالبة تسيء",
+          "confidence": 0.54,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.0,
+          "direction": "rtl",
+          "rtl_ratio": 0.97,
+          "word_count": 34,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b3",
+          "bbox": [
+            77.66400146484375,
+            139.08497619628906,
+            527.8892822265625,
+            155.80996704101562
+          ],
+          "text": "اليها، فحزنت البنت الصالحة وذهبت الى المعلمة تشتكي لها. . فقالت لها هذه الكلمة الجميلة). ",
+          "confidence": 0.23,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.0,
+          "direction": "rtl",
+          "rtl_ratio": 0.95,
+          "word_count": 15,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b4",
+          "bbox": [
+            304.489990234375,
+            156.33616638183594,
+            541.5780029296875,
+            174.13156127929688
+          ],
+          "text": "ت- تخير: االجابة الصحيحة مما بين القوسين",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.94,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b5",
+          "bbox": [
+            287.80999755859375,
+            174.8162078857422,
+            509.9737548828125,
+            192.61160278320312
+          ],
+          "text": "3. مضاد \"تسيء. . . : \"",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "ltr",
+          "rtl_ratio": 0.22,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b6",
+          "bbox": [
+            67.8239974975586,
+            193.1761932373047,
+            491.96331787109375,
+            210.97158813476562
+          ],
+          "text": "ا- تحسن ب- تذم ج- تبتعد عنها د- كل ذلك",
+          "confidence": 0.15,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.86,
+          "word_count": 10,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b7",
+          "bbox": [
+            284.3299865722656,
+            211.5361785888672,
+            509.9737548828125,
+            229.33157348632812
+          ],
+          "text": "4. معنى \"يصبر. . . : \"",
+          "confidence": 0.3,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "ltr",
+          "rtl_ratio": 0.21,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b8",
+          "bbox": [
+            73.46399688720703,
+            230.0161590576172,
+            509.96331787109375,
+            247.81155395507812
+          ],
+          "text": "ا- يبطئ ب- يتحمل ج- يجزع د- يتمهل",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.85,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b9",
+          "bbox": [
+            141.86000061035156,
+            248.37620544433594,
+            541.5780029296875,
+            266.1716003417969
+          ],
+          "text": "ث- ضع عالمة (  ) ( امام العبارة الصحيحة، وعالمة  ) امام العبارة: الخطا",
+          "confidence": 0.24,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.86,
+          "word_count": 16,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b10",
+          "bbox": [
+            239.57000732421875,
+            266.76617431640625,
+            528.09375,
+            284.5615539550781
+          ],
+          "text": "3. الصبر من اعظم االخالق. (  )",
+          "confidence": 0.3,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.75,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b11",
+          "bbox": [
+            241.49000549316406,
+            285.126220703125,
+            528.09375,
+            302.9216003417969
+          ],
+          "text": "4. نصح االخرين ليس من واجباتي. (  )",
+          "confidence": 0.15,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.79,
+          "word_count": 9,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b12",
+          "bbox": [
+            422.5899963378906,
+            337.92620849609375,
+            523.460693359375,
+            355.7215881347656
+          ],
+          "text": ": رابعا: النصوص",
+          "confidence": 0.04,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.85,
+          "word_count": 3,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b13",
+          "bbox": [
+            282.6499938964844,
+            364.3262023925781,
+            523.5487670898438,
+            382.12158203125
+          ],
+          "text": "( من نص تواضع سيدنا عمر( )اربع: )درجات",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.84,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b14",
+          "bbox": [
+            190.61000061035156,
+            390.84619140625,
+            527.8436889648438,
+            408.6415710449219
+          ],
+          "text": "امنت لما اقمت العدل بينهم فنمت نوم قرير العين هانيها",
+          "confidence": 0.16,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 10,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b15",
+          "bbox": [
+            191.69000244140625,
+            409.2062072753906,
+            528.0552368164062,
+            429.0415954589844
+          ],
+          "text": "يا رافعا راية الشورى وحارسها جزاك ربك خيراا عن محبيها",
+          "confidence": 0.16,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 10,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b16",
+          "bbox": [
+            309.04998779296875,
+            427.5661926269531,
+            527.8963012695312,
+            463.861572265625
+          ],
+          "text": ": تخير االجابة الصحيحة مما بين القوسين",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.97,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b17",
+          "bbox": [
+            309.2900085449219,
+            464.42620849609375,
+            528.09375,
+            482.2215881347656
+          ],
+          "text": "5 - مرادف \"أقمت\": . . . ",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "ltr",
+          "rtl_ratio": 0.24,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b18",
+          "bbox": [
+            141.13999938964844,
+            482.78619384765625,
+            509.96331787109375,
+            500.5815734863281
+          ],
+          "text": "ا- انشات ب- اسست ج- حققت د- عظمت",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.84,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b19",
+          "bbox": [
+            288.7699890136719,
+            501.14617919921875,
+            528.09375,
+            518.9415893554688
+          ],
+          "text": "6 - مضاد \"هانيها. . . \"",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.34,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b20",
+          "bbox": [
+            140.3000030517578,
+            519.6261596679688,
+            509.96331787109375,
+            537.4215698242188
+          ],
+          "text": "ا- حزينها ب- شقيها ج- ناسيها د- كارهها",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.87,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b21",
+          "bbox": [
+            247.49000549316406,
+            537.9862060546875,
+            528.09375,
+            557.8215942382812
+          ],
+          "text": "7 - \"جزاك ربك خيراا \" اسلوب. . . : غرضه",
+          "confidence": 0.14,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.66,
+          "word_count": 11,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b22",
+          "bbox": [
+            139.33999633789062,
+            556.34619140625,
+            509.96331787109375,
+            574.1416015625
+          ],
+          "text": "ا- الدعاء ب-التمني ج– الرجاء د- التعظيم",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b23",
+          "bbox": [
+            301.010009765625,
+            574.8262329101562,
+            528.09375,
+            592.6216430664062
+          ],
+          "text": "8 - ربط الشاعر االحساس باالمن ب. . . ",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.71,
+          "word_count": 9,
+          "column": 1
+        },
+        {
+          "block_id": "p5_b24",
+          "bbox": [
+            112.45999908447266,
+            593.0662231445312,
+            509.96331787109375,
+            610.8616333007812
+          ],
+          "text": "ا- غياب الشورى ب- اقامة العدل ج- انتشار الحب د- النوم العميق",
+          "confidence": 0.19,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.92,
+          "word_count": 12,
+          "column": 1
+        },
+        {
+          "block_id": "p5_img0_text",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "source_stage": "post_processed",
+          "font": null,
+          "size": null,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 3,
+          "column": 1
+        }
+      ],
+      "images": [
+        {
+          "image_id": "p5_img0",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "image_path": "output/ar01_images/page5_img0.png",
+          "ocr_text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "format": "png"
+        }
+      ]
+    },
+    {
+      "page_number": 6,
+      "width": 595.3200073242188,
+      "height": 841.9199829101562,
+      "columns": 1,
+      "text_coverage": 151.41,
+      "total_confidence": 0.26,
+      "execution_time": 39.49,
+      "stage_stats": {
+        "post_processed": 11
+      },
+      "blocks": [
+        {
+          "block_id": "p6_b0",
+          "bbox": [
+            72.02400207519531,
+            794.3999633789062,
+            525.8919677734375,
+            806.3999633789062
+          ],
+          "text": "Jordan- 02690787167737 www. bassmaah. com/exams",
+          "confidence": 0.14,
+          "source_stage": "post_processed",
+          "font": "Calibri,Bold",
+          "size": 12.0,
+          "direction": "ltr",
+          "rtl_ratio": 0.0,
+          "word_count": 5,
+          "column": 1
+        },
+        {
+          "block_id": "p6_b1",
+          "bbox": [
+            301.7300109863281,
+            67.75621032714844,
+            523.4571533203125,
+            85.5516128540039
+          ],
+          "text": "(: خامسا: القواعد النحوية اربع )درجات",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 6,
+          "column": 1
+        },
+        {
+          "block_id": "p6_b2",
+          "bbox": [
+            303.1700134277344,
+            94.17619323730469,
+            523.3050537109375,
+            111.97159576416016
+          ],
+          "text": ": اختر االجابة الصحيحة مما بينة القوسين",
+          "confidence": 0.1,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.97,
+          "word_count": 7,
+          "column": 1
+        },
+        {
+          "block_id": "p6_b3",
+          "bbox": [
+            269.2099914550781,
+            112.65617370605469,
+            505.53375244140625,
+            130.45156860351562
+          ],
+          "text": "5. متى. . . الخير. تنالوا محبة الناس",
+          "confidence": 0.12,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "mixed",
+          "rtl_ratio": 0.61,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p6_b4",
+          "bbox": [
+            140.3000030517578,
+            131.0161590576172,
+            487.5368957519531,
+            148.81155395507812
+          ],
+          "text": "ا- تفعل ب– تفعال ج– تفعلوا د- تفعلون",
+          "confidence": 0.13,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.86,
+          "word_count": 8,
+          "column": 1
+        },
+        {
+          "block_id": "p6_b5",
+          "bbox": [
+            83.90399932861328,
+            149.37620544433594,
+            505.53375244140625,
+            185.65158081054688
+          ],
+          "text": "6. رايت الحق منتصراا. . . ، اعراب منتصراا ا- نعت ب– مفعول به اول ج– مفعول به ثان د- حال",
+          "confidence": 0.3,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.78,
+          "word_count": 21,
+          "column": 1
+        },
+        {
+          "block_id": "p6_b6",
+          "bbox": [
+            168.3800048828125,
+            186.21617126464844,
+            505.53375244140625,
+            204.97158813476562
+          ],
+          "text": "7. . . . يُراقب الطالب في االمتحان، اعراب الطالب",
+          "confidence": 0.15,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.72,
+          "word_count": 10,
+          "column": 1
+        },
+        {
+          "block_id": "p6_b7",
+          "bbox": [
+            83.54399871826172,
+            204.57615661621094,
+            487.5233154296875,
+            222.37155151367188
+          ],
+          "text": "ا- نائب فاعل ب– مفعول به ج– مفعول به د- خبر",
+          "confidence": 0.16,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 11,
+          "column": 1
+        },
+        {
+          "block_id": "p6_b8",
+          "bbox": [
+            86.78399658203125,
+            223.0561981201172,
+            505.53375244140625,
+            259.0915832519531
+          ],
+          "text": "8. عند بناء الفعل قال للمجهول يصير ا- قول ب– قلت ج– قالت د- قيل",
+          "confidence": 0.24,
+          "source_stage": "post_processed",
+          "font": "Arial,Bold",
+          "size": 15.960000038146973,
+          "direction": "rtl",
+          "rtl_ratio": 0.88,
+          "word_count": 15,
+          "column": 1
+        },
+        {
+          "block_id": "p6_full_ocr",
+          "bbox": [
+            0,
+            0,
+            595.3200073242188,
+            841.9199829101562
+          ],
+          "text": "خامسًا: القواعد النحوية: ١ اربع درجات القوسين: اختر الاجابة الصحيحة مما تنالوا محبة ٥٥ ٥٥ ٥٥ ٥٥ ٥٥ ٥٥ 5. متى د- تفعلون ج_ تفعلو ب_ تفعلا ا- تفعل ٥٥ ٥٥ منتصرًا اعراب منتصرًا6. رايت د- حال ج_ مفعول به ثان ب- مفعول به اول ا- نعت 7. يراقب الطلاب في الامتحان اعراب الطلاب ج_ مفعول ب- مفعول ا- نائب فاعل بناء الفعل قال للمجهول يصير. 8 ج_ قالت قلت ا- قول نلومك Jordan- 00962787167737 www bassmaah com exams بينة الناس. الخير الحق خبر عند قيل لتبدع",
+          "confidence": 0.75,
+          "source_stage": "post_processed",
+          "font": null,
+          "size": null,
+          "direction": "rtl",
+          "rtl_ratio": 0.82,
+          "word_count": 87,
+          "column": 1
+        },
+        {
+          "block_id": "p6_img0_text",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "source_stage": "post_processed",
+          "font": null,
+          "size": null,
+          "direction": "rtl",
+          "rtl_ratio": 1.0,
+          "word_count": 3,
+          "column": 1
+        }
+      ],
+      "images": [
+        {
+          "image_id": "p6_img0",
+          "bbox": [
+            117.6500015258789,
+            154.699951171875,
+            477.6499938964844,
+            682.699951171875
+          ],
+          "image_path": "output/ar01_images/page6_img0.png",
+          "ocr_text": "صمل نلهمك لتبدع",
+          "confidence": 0.7,
+          "format": "png"
+        }
+      ]
+    }
+  ]
+}
