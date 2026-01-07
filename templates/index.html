@@ -47,17 +47,67 @@
                 <!-- File List -->
                 <div id="fileList" class="file-list hidden"></div>
 
+                <!-- Pipeline Selection -->
+                <div class="settings">
+                    <h3>Pipeline Selection</h3>
+                    <div class="pipeline-selector">
+                        <label class="pipeline-option">
+                            <input type="radio" name="pipeline" value="rag" checked>
+                            <div class="pipeline-card">
+                                <div class="pipeline-header">
+                                    <span class="pipeline-badge rag">⚡ NEW</span>
+                                    <strong>RAG-Optimized Pipeline</strong>
+                                </div>
+                                <p>5-8x faster, lightweight output, perfect for RAG ingestion</p>
+                                <ul class="pipeline-features">
+                                    <li>✓ Language detection before OCR</li>
+                                    <li>✓ Dynamic OCR engine selection</li>
+                                    <li>✓ Controlled multiprocessing</li>
+                                    <li>✓ NDJSON streaming output</li>
+                                </ul>
+                            </div>
+                        </label>
+                        <label class="pipeline-option">
+                            <input type="radio" name="pipeline" value="intelligent">
+                            <div class="pipeline-card">
+                                <div class="pipeline-header">
+                                    <span class="pipeline-badge intelligent">ORIGINAL</span>
+                                    <strong>Intelligent Pipeline</strong>
+                                </div>
+                                <p>7-stage pipeline with full metadata and visual layout</p>
+                                <ul class="pipeline-features">
+                                    <li>✓ Bounding boxes for all blocks</li>
+                                    <li>✓ Font and style information</li>
+                                    <li>✓ Complete extraction metadata</li>
+                                    <li>✓ Image extraction support</li>
+                                </ul>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Settings -->
                 <div class="settings">
                     <h3>Extraction Settings</h3>
                     <div class="settings-grid">
+                        <!-- Common Settings -->
                         <div class="setting-item">
-                            <label for="language">Language</label>
+                            <label for="language">OCR Language Models</label>
                             <select id="language" class="input">
                                 <option value="ara+eng">Arabic + English</option>
                                 <option value="ara">Arabic Only</option>
                                 <option value="eng">English Only</option>
                             </select>
+                            <small class="setting-note">Models to load for OCR (both pipelines)</small>
+                        </div>
+                        <div class="setting-item">
+                            <label for="mode">Pipeline Mode</label>
+                            <select id="mode" class="input">
+                                <option value="fast">Fast (1-2s/page)</option>
+                                <option value="balanced" selected>Balanced (2-3s/page)</option>
+                                <option value="thorough">Thorough (3-5s/page)</option>
+                            </select>
+                            <small id="modeDescription" class="setting-note">Balanced: Good speed/accuracy trade-off</small>
                         </div>
                         <div class="setting-item">
                             <label for="dpi">DPI Quality</label>
@@ -65,39 +115,109 @@
                                 <option value="200">200 (Fast)</option>
                                 <option value="300" selected>300 (Balanced)</option>
                                 <option value="400">400 (High Quality)</option>
-                                <option value="500">500 (Best Quality)</option>
                             </select>
+                            <small class="setting-note">Image resolution for OCR (both pipelines)</small>
                         </div>
-                        <div class="setting-item checkbox-item">
-                            <label>
-                                <input type="checkbox" id="preprocess" checked>
-                                <span>Enable Preprocessing</span>
-                            </label>
-                            <small>Improves OCR accuracy for low-quality scans</small>
+
+                        <!-- RAG-specific settings -->
+                        <div id="ragSettings" class="rag-settings">
+                            <div class="setting-item">
+                                <label for="outputFormat">Output Format</label>
+                                <select id="outputFormat" class="input">
+                                    <option value="ndjson" selected>NDJSON (Streaming)</option>
+                                    <option value="json">JSON (Standard)</option>
+                                    <option value="both">Both Formats</option>
+                                </select>
+                                <small class="setting-note">✓ RAG only: NDJSON recommended for streaming ingestion</small>
+                            </div>
+                            <div class="setting-item">
+                                <label for="maxWorkers">Parallel Workers</label>
+                                <select id="maxWorkers" class="input">
+                                    <option value="" selected>Auto (Recommended)</option>
+                                    <option value="1">1 (Sequential)</option>
+                                    <option value="2">2 Workers</option>
+                                    <option value="4">4 Workers</option>
+                                    <option value="8">8 Workers</option>
+                                </select>
+                                <small class="setting-note">✓ RAG only: Auto-detects based on CPU and memory</small>
+                            </div>
+                            <div class="setting-item checkbox-item">
+                                <label>
+                                    <input type="checkbox" id="saveStats">
+                                    <span>Save Statistics</span>
+                                </label>
+                                <small class="setting-note">✓ RAG only: Generate performance report</small>
+                            </div>
+                            <div class="setting-item checkbox-item">
+                                <label>
+                                    <input type="checkbox" id="enableGridOcr">
+                                    <span>Enable Grid OCR</span>
+                                </label>
+                                <small class="setting-note">✓ RAG only: ⚠️ Adds 15-20% overhead (disabled by default)</small>
+                            </div>
                         </div>
-                        <div class="setting-item checkbox-item">
-                            <label>
-                                <input type="checkbox" id="extractImages">
-                                <span>Extract Images</span>
-                            </label>
-                            <small>Extract embedded images from PDFs</small>
+
+                        <!-- Intelligent pipeline settings -->
+                        <div id="intelligentSettings" class="intelligent-settings hidden">
+                            <div class="setting-item">
+                                <label for="ocrEngine">OCR Engine (Fixed)</label>
+                                <select id="ocrEngine" class="input">
+                                    <option value="easyocr" selected>EasyOCR (Better Accuracy)</option>
+                                    <option value="tesseract">Tesseract (Faster)</option>
+                                </select>
+                                <small class="setting-note">✓ Intelligent only: Fixed engine for entire document</small>
+                            </div>
+                            <div class="setting-item checkbox-item">
+                                <label>
+                                    <input type="checkbox" id="preprocess" checked>
+                                    <span>Enable Preprocessing</span>
+                                </label>
+                                <small class="setting-note">✓ Intelligent only: Image enhancement for OCR</small>
+                            </div>
+                            <div class="setting-item checkbox-item">
+                                <label>
+                                    <input type="checkbox" id="extractImages">
+                                    <span>Extract Images</span>
+                                </label>
+                                <small class="setting-note">✓ Intelligent only: Save embedded images to folder</small>
+                            </div>
                         </div>
-                        <div class="setting-item">
-                            <label for="mode">Pipeline Mode</label>
-                            <select id="mode" class="input">
-                                <option value="fast">Fast (Stages 1-2, 5-7)</option>
-                                <option value="balanced" selected>Balanced (Stages 1-3, 5-7)</option>
-                                <option value="thorough">Thorough (All 7 Stages)</option>
-                            </select>
-                            <small>Fast: Skip full-page OCR | Balanced: Safety net | Thorough: Maximum accuracy</small>
+
+                        <!-- Disabled settings with explanations -->
+                        <div id="disabledRagSettings" class="disabled-settings hidden">
+                            <div class="setting-item disabled-setting">
+                                <label>OCR Engine Selection</label>
+                                <div class="disabled-input">Auto-selected per page</div>
+                                <small class="setting-note disabled-note">✗ Not needed: RAG auto-detects language and selects optimal engine per page</small>
+                            </div>
+                            <div class="setting-item disabled-setting">
+                                <label>Image Preprocessing</label>
+                                <div class="disabled-input">Built-in optimization</div>
+                                <small class="setting-note disabled-note">✗ Not needed: RAG uses optimized preprocessing automatically</small>
+                            </div>
+                            <div class="setting-item disabled-setting">
+                                <label>Extract Images</label>
+                                <div class="disabled-input">Not supported</div>
+                                <small class="setting-note disabled-note">✗ Not available: RAG focuses on text extraction only (lightweight output)</small>
+                            </div>
                         </div>
-                        <div class="setting-item">
-                            <label for="ocrEngine">OCR Engine</label>
-                            <select id="ocrEngine" class="input">
-                                <option value="easyocr" selected>EasyOCR (Better Accuracy)</option>
-                                <option value="tesseract">Tesseract (Faster)</option>
-                            </select>
-                            <small>EasyOCR: Deep learning, more accurate | Tesseract: Traditional, faster</small>
+
+                        <div id="disabledIntelligentSettings" class="disabled-settings hidden">
+                            <div class="setting-item disabled-setting">
+                                <label>Output Format</label>
+                                <div class="disabled-input">JSON only</div>
+                                <small class="setting-note disabled-note">✗ Not available: Intelligent pipeline outputs standard JSON with full metadata</small>
+                            </div>
+                            <div class="setting-item disabled-setting">
+                                <label>Parallel Workers</label>
+                                <div class="disabled-input">Sequential processing</div>
+                                <small class="setting-note disabled-note">✗ Not available: Intelligent pipeline processes pages sequentially</small>
+                            </div>
+                            <div class="setting-item disabled-setting">
+                                <label>Statistics Report</label>
+                                <div class="disabled-input">Included in output</div>
+                                <small class="setting-note disabled-note">✗ Not needed: Stage statistics included in JSON output</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -133,6 +253,7 @@
                     <div id="progressFill" class="progress-fill"></div>
                 </div>
                 <div id="currentFile" class="current-file"></div>
+                <div id="pipelineInfo" class="pipeline-info"></div>
             </div>
         </div>
 

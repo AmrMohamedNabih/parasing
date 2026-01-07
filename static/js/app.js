@@ -1,7 +1,8 @@
-// PDF Extractor GUI - JavaScript
+// PDF Extractor GUI - JavaScript with RAG Pipeline Support
 
 let selectedFiles = [];
 let currentTaskId = null;
+let currentPipeline = 'rag'; // Default to RAG
 
 // DOM Elements
 const uploadArea = document.getElementById('uploadArea');
@@ -12,6 +13,50 @@ const clearBtn = document.getElementById('clearBtn');
 const progressSection = document.getElementById('progressSection');
 const resultsSection = document.getElementById('resultsSection');
 const resultsContainer = document.getElementById('resultsContainer');
+
+// Pipeline Selection
+const pipelineRadios = document.querySelectorAll('input[name="pipeline"]');
+const ragSettings = document.getElementById('ragSettings');
+const intelligentSettings = document.getElementById('intelligentSettings');
+const disabledRagSettings = document.getElementById('disabledRagSettings');
+const disabledIntelligentSettings = document.getElementById('disabledIntelligentSettings');
+
+// Handle pipeline selection
+pipelineRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        currentPipeline = e.target.value;
+
+        // Show/hide settings based on pipeline
+        if (currentPipeline === 'rag') {
+            // Show RAG settings
+            ragSettings.classList.remove('hidden');
+            intelligentSettings.classList.add('hidden');
+
+            // Show disabled intelligent settings (what RAG doesn't use)
+            disabledRagSettings.classList.remove('hidden');
+            disabledIntelligentSettings.classList.add('hidden');
+        } else {
+            // Show Intelligent settings
+            ragSettings.classList.add('hidden');
+            intelligentSettings.classList.remove('hidden');
+
+            // Show disabled RAG settings (what Intelligent doesn't use)
+            disabledRagSettings.classList.add('hidden');
+            disabledIntelligentSettings.classList.remove('hidden');
+        }
+    });
+});
+
+// Mode descriptions
+const modeDescriptions = {
+    fast: 'Fast: Minimal OCR, 1-2s/page',
+    balanced: 'Balanced: Good speed/accuracy trade-off, 2-3s/page',
+    thorough: 'Thorough: Maximum accuracy, 3-5s/page'
+};
+
+document.getElementById('mode').addEventListener('change', (e) => {
+    document.getElementById('modeDescription').textContent = modeDescriptions[e.target.value];
+});
 
 // Drag and Drop
 uploadArea.addEventListener('dragover', (e) => {
@@ -97,12 +142,26 @@ extractBtn.addEventListener('click', async () => {
         formData.append('files[]', file);
     });
 
+    // Add pipeline selection
+    formData.append('pipeline', currentPipeline);
+
+    // Common settings
     formData.append('language', document.getElementById('language').value);
     formData.append('dpi', document.getElementById('dpi').value);
-    formData.append('preprocess', document.getElementById('preprocess').checked);
-    formData.append('extract_images', document.getElementById('extractImages').checked);
     formData.append('mode', document.getElementById('mode').value);
-    formData.append('ocr_engine', document.getElementById('ocrEngine').value);
+
+    if (currentPipeline === 'rag') {
+        // RAG-specific settings
+        formData.append('output_format', document.getElementById('outputFormat').value);
+        formData.append('max_workers', document.getElementById('maxWorkers').value);
+        formData.append('save_stats', document.getElementById('saveStats').checked);
+        formData.append('enable_grid_ocr', document.getElementById('enableGridOcr').checked);
+    } else {
+        // Intelligent pipeline settings
+        formData.append('preprocess', document.getElementById('preprocess').checked);
+        formData.append('extract_images', document.getElementById('extractImages').checked);
+        formData.append('ocr_engine', document.getElementById('ocrEngine').value);
+    }
 
     try {
         extractBtn.disabled = true;
@@ -117,29 +176,34 @@ extractBtn.addEventListener('click', async () => {
 
         if (response.ok) {
             currentTaskId = data.task_id;
-            showProgress();
+            showProgress(data.pipeline, data.message);
             pollStatus();
         } else {
             alert('Error: ' + data.error);
-            extractBtn.disabled = false;
-            extractBtn.innerHTML = `
-                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                Extract Text
-            `;
+            resetUI();
         }
     } catch (error) {
         alert('Error: ' + error.message);
-        extractBtn.disabled = false;
+        resetUI();
     }
 });
 
 // Show Progress
-function showProgress() {
+function showProgress(pipeline, message) {
     progressSection.classList.remove('hidden');
     resultsSection.classList.add('hidden');
     resultsContainer.innerHTML = '';
+
+    // Show pipeline info
+    const pipelineInfo = document.getElementById('pipelineInfo');
+    if (pipelineInfo) {
+        pipelineInfo.innerHTML = `
+            <div style="margin-top: 0.75rem; padding: 0.75rem; background: var(--bg); border-radius: 6px; font-size: 0.875rem;">
+                <strong>${pipeline === 'rag' ? '⚡ RAG-Optimized' : '🔧 Intelligent'} Pipeline</strong>
+                <p style="margin: 0.25rem 0 0 0; color: var(--text-muted);">${message}</p>
+            </div>
+        `;
+    }
 }
 
 // Poll Status
@@ -191,13 +255,13 @@ function showResults(data) {
 
     // Show successful extractions
     data.results.forEach(result => {
-        const card = createResultCard(result, true);
+        const card = createResultCard(result, true, data.pipeline);
         resultsContainer.appendChild(card);
     });
 
     // Show errors
     data.errors.forEach(error => {
-        const card = createResultCard(error, false);
+        const card = createResultCard(error, false, data.pipeline);
         resultsContainer.appendChild(card);
     });
 
@@ -205,74 +269,104 @@ function showResults(data) {
 }
 
 // Create Result Card
-function createResultCard(result, success) {
+function createResultCard(result, success, pipeline) {
     const card = document.createElement('div');
     card.className = `result-card ${success ? 'success' : 'error'}`;
 
     if (success) {
-        // Build statistics info
         let statsHtml = '';
+        let actionsHtml = '';
 
-        // Intelligent pipeline stats
-        statsHtml = `
-            <div class="result-stats">
-                <span class="stat-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M14 2H6a2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    </svg>
-                    ${result.total_pages} pages
-                </span>
-                <span class="stat-item" style="color: var(--success);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                    </svg>
-                    ${result.total_blocks} blocks
-                </span>
-                <span class="stat-item" style="color: var(--primary);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    ${result.avg_confidence} confidence
-                </span>
-                <span class="stat-item" style="color: var(--warning);">
-                    ⏱️ ${result.execution_time}s
-                </span>
-            </div>
-            ${result.stage_stats ? `
-                <div class="stage-breakdown" style="margin-top: 0.75rem; padding: 0.75rem; background: var(--bg); border-radius: 6px;">
-                    <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-muted);">
-                        Stage Breakdown (${result.mode} mode):
-                    </div>
-                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; font-size: 0.75rem;">
-                        ${result.stage_stats.direct ? `<span style="color: var(--success);">✓ Direct: ${result.stage_stats.direct}</span>` : ''}
-                        ${result.stage_stats.block_ocr ? `<span style="color: var(--warning);">⚡ Block OCR: ${result.stage_stats.block_ocr}</span>` : ''}
-                        ${result.stage_stats.full_page_ocr ? `<span style="color: var(--secondary);">📄 Full OCR: ${result.stage_stats.full_page_ocr}</span>` : ''}
-                        ${result.stage_stats.grid_ocr ? `<span style="color: var(--primary);">🔲 Grid OCR: ${result.stage_stats.grid_ocr}</span>` : ''}
-                        ${result.stage_stats.image_ocr ? `<span style="color: var(--danger);">🖼️ Image OCR: ${result.stage_stats.image_ocr}</span>` : ''}
-                        ${result.stage_stats.post_processed ? `<span style="color: #10b981;">✨ Post-processed: ${result.stage_stats.post_processed}</span>` : ''}
-                    </div>
+        if (pipeline === 'rag') {
+            // RAG pipeline stats
+            statsHtml = `
+                <div class="result-stats">
+                    <span class="stat-item">
+                        📄 ${result.total_pages} pages
+                    </span>
+                    <span class="stat-item" style="color: var(--success);">
+                        ✓ ${result.successful_pages} successful
+                    </span>
+                    ${result.failed_pages > 0 ? `
+                        <span class="stat-item" style="color: var(--danger);">
+                            ✗ ${result.failed_pages} failed
+                        </span>
+                    ` : ''}
+                    <span class="stat-item" style="color: var(--primary);">
+                        📝 ${result.total_words.toLocaleString()} words
+                    </span>
+                    <span class="stat-item">
+                        🎯 ${result.avg_confidence} confidence
+                    </span>
+                    <span class="stat-item" style="color: var(--warning);">
+                        ⏱️ ${result.execution_time}s
+                    </span>
+                    <span class="stat-item" style="color: var(--success);">
+                        ⚡ ${result.throughput} pages/min
+                    </span>
                 </div>
-            ` : ''}
-        `;
+                ${result.languages_detected && result.languages_detected.length > 0 ? `
+                    <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-muted);">
+                        Languages: ${result.languages_detected.join(', ')}
+                    </div>
+                ` : ''}
+            `;
 
-        // Build action buttons
-        let actionsHtml = `
-            <button class="btn btn-primary btn-small" onclick="viewStructure('${result.json_path}')">
-                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-                View Structure
-            </button>
-            <button class="btn btn-secondary btn-small" onclick="downloadFile('${result.output_file}')">
-                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                Download JSON
-            </button>
-        `;
+            // RAG actions - handle multiple output files
+            actionsHtml = result.output_files.map(filename => {
+                const ext = filename.split('.').pop();
+                const label = ext === 'ndjson' ? 'NDJSON' : ext === 'json' ? 'JSON' : 'Stats';
+                const icon = ext.includes('stats') ? '📊' : '📥';
+
+                return `
+                    <button class="btn btn-secondary btn-small" onclick="downloadFile('${filename}')">
+                        ${icon} Download ${label}
+                    </button>
+                `;
+            }).join('');
+
+        } else {
+            // Intelligent pipeline stats
+            statsHtml = `
+                <div class="result-stats">
+                    <span class="stat-item">
+                        📄 ${result.total_pages} pages
+                    </span>
+                    <span class="stat-item" style="color: var(--success);">
+                        📦 ${result.total_blocks} blocks
+                    </span>
+                    <span class="stat-item" style="color: var(--primary);">
+                        🎯 ${result.avg_confidence} confidence
+                    </span>
+                    <span class="stat-item" style="color: var(--warning);">
+                        ⏱️ ${result.execution_time}s
+                    </span>
+                </div>
+                ${result.stage_stats ? `
+                    <div class="stage-breakdown" style="margin-top: 0.75rem; padding: 0.75rem; background: var(--bg); border-radius: 6px;">
+                        <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-muted);">
+                            Stage Breakdown (${result.mode} mode):
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; font-size: 0.75rem;">
+                            ${result.stage_stats.direct ? `<span style="color: var(--success);">✓ Direct: ${result.stage_stats.direct}</span>` : ''}
+                            ${result.stage_stats.block_ocr ? `<span style="color: var(--warning);">⚡ Block OCR: ${result.stage_stats.block_ocr}</span>` : ''}
+                            ${result.stage_stats.full_page_ocr ? `<span style="color: var(--secondary);">📄 Full OCR: ${result.stage_stats.full_page_ocr}</span>` : ''}
+                            ${result.stage_stats.grid_ocr ? `<span style="color: var(--primary);">🔲 Grid OCR: ${result.stage_stats.grid_ocr}</span>` : ''}
+                            ${result.stage_stats.image_ocr ? `<span style="color: var(--danger);">🖼️ Image OCR: ${result.stage_stats.image_ocr}</span>` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+
+            actionsHtml = `
+                <button class="btn btn-primary btn-small" onclick="viewStructure('${result.json_path}')">
+                    👁️ View Structure
+                </button>
+                <button class="btn btn-secondary btn-small" onclick="downloadFile('${result.output_file}')">
+                    📥 Download JSON
+                </button>
+            `;
+        }
 
         card.innerHTML = `
             <div class="result-header">
@@ -286,7 +380,6 @@ function createResultCard(result, success) {
                 <span class="badge badge-success">Success</span>
             </div>
             ${statsHtml}
-            ${result.preview ? `<div class="result-preview">${escapeHtml(result.preview)}...</div>` : ''}
             <div class="result-actions">
                 ${actionsHtml}
             </div>
@@ -318,58 +411,10 @@ function downloadFile(filename) {
     window.location.href = `/download/${filename}`;
 }
 
-// View Full Text
-function viewFullText(text) {
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        padding: 2rem;
-    `;
-
-    modal.innerHTML = `
-        <div style="
-            background: var(--bg-card);
-            border-radius: 16px;
-            padding: 2rem;
-            max-width: 800px;
-            max-height: 80vh;
-            overflow-y: auto;
-            border: 1px solid var(--border);
-        ">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3>Full Extracted Text</h3>
-                <button onclick="this.closest('div').parentElement.parentElement.remove()" 
-                    style="background: none; border: none; color: var(--text); cursor: pointer; font-size: 1.5rem;">
-                    ×
-                </button>
-            </div>
-            <pre style="
-                white-space: pre-wrap;
-                font-family: 'Courier New', monospace;
-                line-height: 1.6;
-                color: var(--text-muted);
-                direction: rtl;
-                text-align: right;
-            ">${text}</pre>
-        </div>
-    `;
-
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    });
-
-    document.body.appendChild(modal);
+// View Structure function
+function viewStructure(jsonFilename) {
+    const url = `/view/current/${jsonFilename}`;
+    window.open(url, '_blank', 'width=1200,height=800');
 }
 
 // Clear Button
@@ -404,11 +449,4 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-}
-
-// View Structure function
-function viewStructure(jsonFilename) {
-    // Open viewer in new window
-    const url = `/view/current/${jsonFilename}`;
-    window.open(url, '_blank', 'width=1200,height=800');
 }
