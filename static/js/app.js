@@ -156,6 +156,7 @@ extractBtn.addEventListener('click', async () => {
         formData.append('max_workers', document.getElementById('maxWorkers').value);
         formData.append('save_stats', document.getElementById('saveStats').checked);
         formData.append('enable_grid_ocr', document.getElementById('enableGridOcr').checked);
+        formData.append('prefer_paddle', document.getElementById('preferPaddle').checked);
     } else {
         // Intelligent pipeline settings
         formData.append('preprocess', document.getElementById('preprocess').checked);

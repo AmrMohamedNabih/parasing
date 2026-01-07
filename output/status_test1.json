@@ -7,7 +7,7 @@
     "grid_ocr": 0
   },
   "ocr_engines": {
-    "tesseract": 38,
+    "tesseract": 49,
     "easyocr": 0
   },
   "languages": {
@@ -16,8 +16,8 @@
     "mixed": 0
   },
   "performance": {
-    "total_time": 69.35,
-    "avg_time_per_page": 0.84,
+    "total_time": 76.99,
+    "avg_time_per_page": 0.93,
     "peak_memory_mb": 0.0,
     "worker_count": 0
   }

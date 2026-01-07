@@ -80,7 +80,8 @@ def extract_pdf_task_rag(task_id, pdf_files, config):
                 doc_chunks = extractor.extract_document(
                     pdf_path,
                     max_workers=config.get('max_workers'),
-                    verbose=False  # Disable console output in web mode
+                    prefer_paddle=config.get('prefer_paddle', False),  # PaddleOCR preference
+                    verbose=True  # Disable console output in web mode
                 )
                 
                 # Prepare output paths
@@ -265,7 +266,8 @@ def upload_files():
                 'enable_grid_ocr': request.form.get('enable_grid_ocr', 'false') == 'true',
                 'max_workers': int(request.form.get('max_workers')) if request.form.get('max_workers') else None,
                 'output_format': request.form.get('output_format', 'ndjson'),
-                'save_stats': request.form.get('save_stats', 'false') == 'true'
+                'save_stats': request.form.get('save_stats', 'false') == 'true',
+                'prefer_paddle': request.form.get('prefer_paddle', 'false') == 'true'  # PaddleOCR preference
             }
             
             # Start extraction in background

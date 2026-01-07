@@ -12,6 +12,7 @@ Performance Improvements:
 import os
 import time
 import json
+import io
 import fitz  # PyMuPDF
 from pdf2image import convert_from_path
 from PIL import Image
@@ -127,8 +128,9 @@ class RAGOptimizedExtractor:
         self.dpi = dpi
         self.enable_grid_ocr = enable_grid_ocr
         
-        # Initialize EasyOCR reader (lazy loading)
+        # Initialize OCR readers (lazy loading)
         self.easyocr_reader = None
+        self.paddleocr_reader = None
     
     def _init_easyocr(self):
         """Initialize EasyOCR reader (lazy loading)."""
@@ -150,13 +152,38 @@ class RAGOptimizedExtractor:
         except Exception as e:
             print(f"⚠ EasyOCR initialization failed: {e}")
     
+    def _init_paddleocr(self):
+        """Initialize PaddleOCR reader (lazy loading)."""
+        if self.paddleocr_reader is not None:
+            return
+        
+        try:
+            from paddleocr import PaddleOCR
+            # Map language codes for PaddleOCR
+            lang_map = {
+                'ara+eng': 'en',  # PaddleOCR doesn't support multi-lang, use primary
+                'ara': 'ar',      # Use 'ar' not 'arabic'
+                'eng': 'en'
+            }
+            lang = lang_map.get(self.lang, 'en')
+            
+            # Initialize with minimal parameters (compatible with all versions)
+            self.paddleocr_reader = PaddleOCR(
+                use_angle_cls=True,
+                lang=lang
+            )
+        except ImportError:
+            print("⚠ PaddleOCR not installed. Install with: pip install paddleocr paddlepaddle")
+        except Exception as e:
+            print(f"⚠ PaddleOCR initialization failed: {e}")
+    
     def _run_ocr(self, image: Image.Image, engine: str) -> str:
         """
         Run OCR on image using specified engine.
         
         Args:
             image: PIL Image
-            engine: "tesseract" or "easyocr"
+            engine: "tesseract", "easyocr", or "paddleocr"
             
         Returns:
             Extracted text
@@ -173,6 +200,39 @@ class RAGOptimizedExtractor:
                     return " ".join(text_parts)
                 except Exception as e:
                     print(f"EasyOCR error: {e}, falling back to Tesseract")
+        
+        elif engine == "paddleocr":
+            if self.paddleocr_reader is None:
+                self._init_paddleocr()
+            
+            if self.paddleocr_reader is not None:
+                try:
+                    img_array = np.array(image)
+                    # PaddleOCR returns: [[[bbox, (text, confidence)], ...]] or None
+                    results = self.paddleocr_reader.ocr(img_array)
+                    
+                    # Extract text from PaddleOCR results with robust error handling
+                    text_parts = []
+                    if results and isinstance(results, list) and len(results) > 0:
+                        # results[0] contains the list of detected text lines
+                        if results[0] is not None and isinstance(results[0], list):
+                            for line in results[0]:
+                                try:
+                                    # Each line is [bbox, (text, confidence)]
+                                    if line and isinstance(line, (list, tuple)) and len(line) >= 2:
+                                        text_info = line[1]
+                                        if isinstance(text_info, (list, tuple)) and len(text_info) >= 2:
+                                            text = str(text_info[0])  # Text
+                                            conf = float(text_info[1])  # Confidence
+                                            if conf > 0.5 and text.strip():  # Confidence threshold
+                                                text_parts.append(text)
+                                except (IndexError, TypeError, ValueError) as e:
+                                    # Skip malformed results
+                                    continue
+                    
+                    return " ".join(text_parts) if text_parts else ""
+                except Exception as e:
+                    print(f"PaddleOCR error: {e}, falling back to Tesseract")
         
         # Tesseract (default fallback)
         try:
@@ -349,6 +409,87 @@ class RAGOptimizedExtractor:
         
         return None
     
+    # ==================== STAGE 5: IMAGE OCR ====================
+    
+    def stage5_image_ocr(self, pdf_path: str, page_num: int, 
+                        page_width: float, page_height: float,
+                        ocr_engine: str) -> List[Dict]:
+        """
+        Stage 5: Extract text from embedded images using OCR.
+        
+        Args:
+            pdf_path: Path to PDF file
+            page_num: Page number (0-indexed)
+            page_width: Page width
+            page_height: Page height
+            ocr_engine: OCR engine to use
+            
+        Returns:
+            List of text blocks extracted from images
+        """
+        image_blocks = []
+        
+        try:
+            doc = fitz.open(pdf_path)
+            page = doc[page_num]
+            
+            # Get all images on the page
+            images = page.get_images()
+            
+            if not images:
+                doc.close()
+                return image_blocks
+            
+            for img_index, img_info in enumerate(images):
+                try:
+                    # Extract image
+                    xref = img_info[0]
+                    base_image = doc.extract_image(xref)
+                    
+                    if not base_image:
+                        continue
+                    
+                    # Convert to PIL Image
+                    image_bytes = base_image["image"]
+                    image = Image.open(io.BytesIO(image_bytes))
+                    
+                    # Skip very small images (likely icons/decorations)
+                    if image.width < 100 or image.height < 100:
+                        continue
+                    
+                    # Run OCR on image
+                    ocr_text = self._run_ocr(image, ocr_engine)
+                    
+                    if ocr_text.strip() and len(ocr_text.strip()) > 5:
+                        # Get image position on page
+                        image_rects = page.get_image_rects(xref)
+                        
+                        if image_rects:
+                            rect = image_rects[0]
+                            bbox = [rect.x0, rect.y0, rect.x1, rect.y1]
+                        else:
+                            # Default bbox if position not found
+                            bbox = [0, 0, page_width, page_height]
+                        
+                        image_blocks.append({
+                            'text': ocr_text.strip(),
+                            'bbox': bbox,
+                            'confidence': 0.7,
+                            'source': 'image_ocr'
+                        })
+                
+                except Exception as e:
+                    print(f"Error processing image {img_index} on page {page_num + 1}: {e}")
+                    continue
+            
+            doc.close()
+            
+        except Exception as e:
+            print(f"Image OCR error on page {page_num + 1}: {e}")
+        
+        return image_blocks
+    
+    
     # ==================== STAGE 8: RAG CHUNKING ====================
     
     def stage8_rag_chunking(self, page_num: int, all_blocks: List[Dict],
@@ -406,7 +547,7 @@ class RAGOptimizedExtractor:
     
     # ==================== MAIN EXTRACTION ====================
     
-    def extract_page(self, pdf_path: str, page_num: int) -> PageChunk:
+    def extract_page(self, pdf_path: str, page_num: int, verbose: bool = True, prefer_paddle: bool = False) -> PageChunk:
         """
         Extract single page using optimized 8-stage pipeline.
         
@@ -415,31 +556,57 @@ class RAGOptimizedExtractor:
         Args:
             pdf_path: Path to PDF file
             page_num: Page number (0-indexed)
+            verbose: Whether to print progress logs
+            prefer_paddle: If True, use PaddleOCR instead of Tesseract for English
             
         Returns:
             PageChunk (RAG-ready)
         """
         start_time = time.time()
         
+        if verbose:
+            print(f"\n{'='*60}")
+            print(f"📄 Processing Page {page_num + 1}")
+            print(f"{'='*60}")
+        
         try:
             # Stage 1: Direct Extraction
+            if verbose:
+                print(f"[Stage 1] Direct text extraction...")
             blocks, page_width, page_height = self.stage1_direct_extraction(pdf_path, page_num)
+            if verbose:
+                print(f"  ✓ Extracted {len(blocks)} blocks, {sum(len(b['text'].split()) for b in blocks)} words")
             
             # Stage 1.5: Language Detection (CRITICAL - runs BEFORE OCR)
+            if verbose:
+                print(f"[Stage 1.5] Language detection...")
             combined_text = " ".join([block['text'] for block in blocks])
             lang_detection = detect_language_and_direction(combined_text)
             
-            # Select OCR engine based on language
-            ocr_engine = select_ocr_engine(lang_detection)
+            if verbose:
+                print(f"  ✓ Language: {lang_detection.language}")
+                print(f"  ✓ Direction: {lang_detection.text_direction}")
+                print(f"  ✓ Arabic ratio: {lang_detection.rtl_ratio:.2%}")
+            
+            # Select OCR engine based on language and preference
+            ocr_engine = select_ocr_engine(lang_detection, prefer_paddle=prefer_paddle)
+            if verbose:
+                print(f"  ✓ OCR Engine selected: {ocr_engine.upper()}")
             
             # Create image cache and render page ONCE
+            if verbose:
+                print(f"[Image Cache] Rendering page image (DPI: {self.dpi})...")
             image_cache = PageImageCache()
             page_image = image_cache.get_or_render(pdf_path, page_num, self.dpi)
+            if verbose and page_image:
+                print(f"  ✓ Image rendered: {page_image.width}x{page_image.height}px")
             
             ocr_used = False
             
             # Stage 2: Block OCR (reuse page_image)
             if page_image:
+                if verbose:
+                    print(f"[Stage 2] Block OCR (selective)...")
                 improved_blocks = self.stage2_block_ocr(
                     pdf_path, page_num, blocks, page_width, page_height,
                     page_image, ocr_engine
@@ -447,9 +614,16 @@ class RAGOptimizedExtractor:
                 if improved_blocks:
                     blocks.extend(improved_blocks)
                     ocr_used = True
+                    if verbose:
+                        print(f"  ✓ Improved {len(improved_blocks)} blocks via OCR")
+                else:
+                    if verbose:
+                        print(f"  ⊘ No blocks needed OCR (good quality)")
             
             # Stage 3: Full-Page OCR (reuse page_image)
             if page_image:
+                if verbose:
+                    print(f"[Stage 3] Full-page OCR check...")
                 full_page_block = self.stage3_full_page_ocr(
                     page_num, blocks, page_width, page_height,
                     page_image, ocr_engine
@@ -457,11 +631,33 @@ class RAGOptimizedExtractor:
                 if full_page_block:
                     blocks.append(full_page_block)
                     ocr_used = True
+                    if verbose:
+                        print(f"  ✓ Full-page OCR executed (low quality detected)")
+                else:
+                    if verbose:
+                        print(f"  ⊘ Full-page OCR skipped (sufficient quality)")
+            
+            # Stage 5: Image OCR (extract text from embedded images)
+            if verbose:
+                print(f"[Stage 5] Image OCR...")
+            image_blocks = self.stage5_image_ocr(
+                pdf_path, page_num, page_width, page_height, ocr_engine
+            )
+            if image_blocks:
+                blocks.extend(image_blocks)
+                ocr_used = True
+                if verbose:
+                    print(f"  ✓ Extracted text from {len(image_blocks)} embedded images")
+            else:
+                if verbose:
+                    print(f"  ⊘ No images found or no text in images")
             
             # Clear image cache to free memory
             image_cache.clear()
             
             # Stage 8: RAG Chunking
+            if verbose:
+                print(f"[Stage 8] Creating RAG chunk...")
             processing_time = time.time() - start_time
             page_chunk = self.stage8_rag_chunking(
                 page_num, blocks, lang_detection,
@@ -469,11 +665,24 @@ class RAGOptimizedExtractor:
                 processing_time
             )
             
+            if verbose:
+                print(f"\n✅ Page {page_num + 1} completed:")
+                print(f"   • Words: {page_chunk.word_count}")
+                print(f"   • Confidence: {page_chunk.average_confidence:.2f}")
+                print(f"   • Method: {page_chunk.extraction_method}")
+                print(f"   • OCR Engine: {page_chunk.ocr_engine_used or 'None (direct only)'}")
+                print(f"   • Time: {processing_time:.2f}s")
+                print(f"{'='*60}\n")
+            
             return page_chunk
             
         except Exception as e:
             # Error handling
             processing_time = time.time() - start_time
+            if verbose:
+                print(f"\n❌ Error on page {page_num + 1}: {str(e)}")
+                print(f"{'='*60}\n")
+            
             return PageChunk(
                 page_number=page_num + 1,
                 text="",
@@ -489,6 +698,7 @@ class RAGOptimizedExtractor:
     
     def extract_document(self, pdf_path: str,
                         max_workers: Optional[int] = None,
+                        prefer_paddle: bool = False,
                         verbose: bool = True) -> DocumentChunks:
         """
         Extract entire document using multiprocessing.
@@ -496,6 +706,7 @@ class RAGOptimizedExtractor:
         Args:
             pdf_path: Path to PDF file
             max_workers: Maximum number of workers (None = auto)
+            prefer_paddle: If True, use PaddleOCR instead of Tesseract for English
             verbose: Whether to print progress
             
         Returns:
@@ -513,19 +724,26 @@ class RAGOptimizedExtractor:
         
         if verbose:
             print(f"\n{'='*60}")
-            print(f"RAG-Optimized PDF Extraction")
+            print(f"🚀 RAG-Optimized PDF Extraction")
             print(f"{'='*60}")
-            print(f"File: {os.path.basename(pdf_path)}")
-            print(f"Total pages: {total_pages}")
-            print(f"Mode: {self.mode}")
-            print(f"Language: {self.lang}")
+            print(f"📁 File: {os.path.basename(pdf_path)}")
+            print(f"📄 Total pages: {total_pages}")
+            print(f"⚙️  Configuration:")
+            print(f"   • Mode: {self.mode}")
+            print(f"   • Language: {self.lang}")
+            print(f"   • DPI: {self.dpi}")
+            print(f"   • Grid OCR: {'Enabled' if self.enable_grid_ocr else 'Disabled'}")
+            print(f"   • PaddleOCR: {'Preferred for English' if prefer_paddle else 'Not preferred'}")
+            print(f"   • Workers: {max_workers or 'Auto'}")
             print(f"{'='*60}")
         
         # Create process pool manager
         pool_manager = ProcessPoolManager(max_workers=max_workers)
         
         # Prepare arguments for each page
-        page_args = [(pdf_path, page_num, None) for page_num in range(total_pages)]
+        # Pass prefer_paddle as part of config
+        config = {'prefer_paddle': prefer_paddle}
+        page_args = [(pdf_path, page_num, config) for page_num in range(total_pages)]
         
         # Process pages in parallel
         page_chunks = pool_manager.process_pages_parallel(
@@ -546,6 +764,21 @@ class RAGOptimizedExtractor:
             languages_detected=list(set(c.language for c in page_chunks))
         )
         
+        if verbose:
+            print(f"\n{'='*60}")
+            print(f"✅ EXTRACTION COMPLETE")
+            print(f"{'='*60}")
+            print(f"📊 Statistics:")
+            print(f"   • Total pages: {doc_chunks.total_pages}")
+            print(f"   • Successful: {doc_chunks.successful_pages}")
+            print(f"   • Failed: {doc_chunks.failed_pages}")
+            print(f"   • Total words: {doc_chunks.total_words:,}")
+            print(f"   • Avg confidence: {doc_chunks.average_confidence:.2%}")
+            print(f"   • Languages: {', '.join(doc_chunks.languages_detected)}")
+            print(f"   • Total time: {total_time:.2f}s")
+            print(f"   • Throughput: {doc_chunks.total_pages / total_time * 60:.1f} pages/min")
+            print(f"{'='*60}\n")
+        
         return doc_chunks
 
 
@@ -560,5 +793,6 @@ def _extract_page_worker(args: Tuple) -> PageChunk:
     # Create extractor instance for this worker
     extractor = RAGOptimizedExtractor()
     
-    # Extract page
-    return extractor.extract_page(pdf_path, page_num)
+    # Extract page with config
+    prefer_paddle = config.get('prefer_paddle', False) if config else False
+    return extractor.extract_page(pdf_path, page_num, verbose=False, prefer_paddle=prefer_paddle)
