@@ -109,11 +109,13 @@ class RAGOptimizedExtractor:
     8. Lightweight RAG-ready output
     """
     
-    def __init__(self,
+    def __init__(self, 
                  lang: str = 'ara+eng',
                  mode: str = 'balanced',
                  dpi: int = 300,
-                 enable_grid_ocr: bool = False):
+                 enable_grid_ocr: bool = False,
+                 ocr_mode: str = 'auto',  # NEW: OCR mode
+                 ocr_pool = None):  # OCR Worker Pool instance
         """
         Initialize RAG-Optimized Extractor.
         
@@ -122,24 +124,28 @@ class RAGOptimizedExtractor:
             mode: Pipeline mode - 'fast', 'balanced', 'thorough'
             dpi: Resolution for OCR
             enable_grid_ocr: Whether to enable Grid OCR (default: False)
+            ocr_mode: OCR engine mode ('auto', 'easyocr', 'paddleocr')
+            ocr_pool: OCR Worker Pool instance (if None, uses legacy loading)
         """
         self.lang = lang
         self.mode = mode
         self.dpi = dpi
         self.enable_grid_ocr = enable_grid_ocr
+        self.ocr_mode = ocr_mode
+        self.ocr_pool = ocr_pool
         
-        # Initialize OCR readers (lazy loading)
+        # Initialize OCR readers (only used if ocr_pool is None)
         self.easyocr_reader = None
         self.paddleocr_reader = None
     
     def _init_easyocr(self):
-        """Initialize EasyOCR reader (lazy loading)."""
+        """Initialize EasyOCR reader (lazy load fallback for CLI usage)."""
         if self.easyocr_reader is not None:
             return
         
+        # Lazy load EasyOCR (fallback when OCR Worker Pool not available)
         try:
             import easyocr
-            # Map language codes
             lang_map = {
                 'ara+eng': ['ar', 'en'],
                 'ara': ['ar'],
@@ -153,21 +159,19 @@ class RAGOptimizedExtractor:
             print(f"⚠ EasyOCR initialization failed: {e}")
     
     def _init_paddleocr(self):
-        """Initialize PaddleOCR reader (lazy loading)."""
+        """Initialize PaddleOCR reader (lazy load fallback for CLI usage)."""
         if self.paddleocr_reader is not None:
             return
         
+        # Lazy load PaddleOCR (fallback when OCR Worker Pool not available)
         try:
             from paddleocr import PaddleOCR
-            # Map language codes for PaddleOCR
             lang_map = {
-                'ara+eng': 'en',  # PaddleOCR doesn't support multi-lang, use primary
-                'ara': 'ar',      # Use 'ar' not 'arabic'
+                'ara+eng': 'en',
+                'ara': 'ar',
                 'eng': 'en'
             }
             lang = lang_map.get(self.lang, 'en')
-            
-            # Initialize with minimal parameters (compatible with all versions)
             self.paddleocr_reader = PaddleOCR(
                 use_angle_cls=True,
                 lang=lang
@@ -177,17 +181,51 @@ class RAGOptimizedExtractor:
         except Exception as e:
             print(f"⚠ PaddleOCR initialization failed: {e}")
     
-    def _run_ocr(self, image: Image.Image, engine: str) -> str:
+    def _run_ocr(self, image: Image.Image, engine: str, page_num: int = 0) -> str:
         """
         Run OCR on image using specified engine.
+        
+        Uses OCR Worker Pool if available, otherwise falls back to legacy loading.
         
         Args:
             image: PIL Image
             engine: "tesseract", "easyocr", or "paddleocr"
+            page_num: Page number (for tracking)
             
         Returns:
             Extracted text
         """
+        # Get OCR Worker Pool from module (works in multiprocessing)
+        from ocr_worker_pool import get_ocr_pool
+        ocr_pool = get_ocr_pool()
+        
+        # DEBUG: Log OCR pool status
+        print(f"🔍 [DEBUG] _run_ocr called:")
+        print(f"   • Engine: {engine}")
+        print(f"   • Page: {page_num + 1}")
+        print(f"   • OCR Pool available: {ocr_pool is not None}")
+        
+        # Use OCR Worker Pool if available
+        if ocr_pool is not None and engine in ['easyocr', 'paddleocr']:
+            print(f"   ✓ Using OCR Worker Pool for {engine}")
+            try:
+                result = ocr_pool.submit_ocr_task(
+                    image=image,
+                    engine='paddle' if engine == 'paddleocr' else 'easyocr',
+                    page_number=page_num,
+                    language=self.lang
+                )
+                
+                if result['error']:
+                    print(f"OCR Worker Pool error: {result['error']}, falling back to Tesseract")
+                    return self._run_tesseract(image)
+                
+                return result['text']
+            except Exception as e:
+                print(f"OCR Worker Pool error: {e}, falling back to Tesseract")
+                return self._run_tesseract(image)
+        
+        # Legacy path: Load models locally (for CLI usage or if pool not available)
         if engine == "easyocr":
             if self.easyocr_reader is None:
                 self._init_easyocr()
@@ -208,26 +246,21 @@ class RAGOptimizedExtractor:
             if self.paddleocr_reader is not None:
                 try:
                     img_array = np.array(image)
-                    # PaddleOCR returns: [[[bbox, (text, confidence)], ...]] or None
                     results = self.paddleocr_reader.ocr(img_array)
                     
-                    # Extract text from PaddleOCR results with robust error handling
                     text_parts = []
                     if results and isinstance(results, list) and len(results) > 0:
-                        # results[0] contains the list of detected text lines
                         if results[0] is not None and isinstance(results[0], list):
                             for line in results[0]:
                                 try:
-                                    # Each line is [bbox, (text, confidence)]
                                     if line and isinstance(line, (list, tuple)) and len(line) >= 2:
                                         text_info = line[1]
                                         if isinstance(text_info, (list, tuple)) and len(text_info) >= 2:
-                                            text = str(text_info[0])  # Text
-                                            conf = float(text_info[1])  # Confidence
-                                            if conf > 0.5 and text.strip():  # Confidence threshold
+                                            text = str(text_info[0])
+                                            conf = float(text_info[1])
+                                            if conf > 0.5 and text.strip():
                                                 text_parts.append(text)
-                                except (IndexError, TypeError, ValueError) as e:
-                                    # Skip malformed results
+                                except (IndexError, TypeError, ValueError):
                                     continue
                     
                     return " ".join(text_parts) if text_parts else ""
@@ -235,6 +268,10 @@ class RAGOptimizedExtractor:
                     print(f"PaddleOCR error: {e}, falling back to Tesseract")
         
         # Tesseract (default fallback)
+        return self._run_tesseract(image)
+    
+    def _run_tesseract(self, image: Image.Image) -> str:
+        """Run Tesseract OCR (extracted for reuse)."""
         try:
             # Preprocess for Tesseract
             img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
@@ -547,7 +584,7 @@ class RAGOptimizedExtractor:
     
     # ==================== MAIN EXTRACTION ====================
     
-    def extract_page(self, pdf_path: str, page_num: int, verbose: bool = True, prefer_paddle: bool = False) -> PageChunk:
+    def extract_page(self, pdf_path: str, page_num: int, verbose: bool = True, ocr_mode: str = "auto") -> PageChunk:
         """
         Extract single page using optimized 8-stage pipeline.
         
@@ -557,7 +594,7 @@ class RAGOptimizedExtractor:
             pdf_path: Path to PDF file
             page_num: Page number (0-indexed)
             verbose: Whether to print progress logs
-            prefer_paddle: If True, use PaddleOCR instead of Tesseract for English
+            ocr_mode: OCR engine mode ('auto', 'easyocr', 'paddleocr')
             
         Returns:
             PageChunk (RAG-ready)
@@ -589,7 +626,8 @@ class RAGOptimizedExtractor:
                 print(f"  ✓ Arabic ratio: {lang_detection.rtl_ratio:.2%}")
             
             # Select OCR engine based on language and preference
-            ocr_engine = select_ocr_engine(lang_detection, prefer_paddle=prefer_paddle)
+            # Select OCR engine based on language and preference
+            ocr_engine = select_ocr_engine(lang_detection, ocr_mode=ocr_mode)
             if verbose:
                 print(f"  ✓ OCR Engine selected: {ocr_engine.upper()}")
             
@@ -698,7 +736,7 @@ class RAGOptimizedExtractor:
     
     def extract_document(self, pdf_path: str,
                         max_workers: Optional[int] = None,
-                        prefer_paddle: bool = False,
+                        ocr_mode: str = "auto",
                         verbose: bool = True) -> DocumentChunks:
         """
         Extract entire document using multiprocessing.
@@ -706,7 +744,7 @@ class RAGOptimizedExtractor:
         Args:
             pdf_path: Path to PDF file
             max_workers: Maximum number of workers (None = auto)
-            prefer_paddle: If True, use PaddleOCR instead of Tesseract for English
+            ocr_mode: OCR engine mode ('auto', 'easyocr', 'paddleocr')
             verbose: Whether to print progress
             
         Returns:
@@ -733,16 +771,72 @@ class RAGOptimizedExtractor:
             print(f"   • Language: {self.lang}")
             print(f"   • DPI: {self.dpi}")
             print(f"   • Grid OCR: {'Enabled' if self.enable_grid_ocr else 'Disabled'}")
-            print(f"   • PaddleOCR: {'Preferred for English' if prefer_paddle else 'Not preferred'}")
+            print(f"   • OCR Mode: {ocr_mode}")
             print(f"   • Workers: {max_workers or 'Auto'}")
             print(f"{'='*60}")
         
+        # Check if OCR Worker Pool is available
+        from ocr_worker_pool import get_ocr_pool
+        ocr_pool = get_ocr_pool()
+        
+        # Get number of pages
+        doc = fitz.open(pdf_path)
+        num_pages = len(doc)
+        doc.close()
+        
+        if ocr_pool is not None:
+            # OCR Worker Pool is active - process pages SEQUENTIALLY
+            # The OCR Worker Pool already provides parallelism
+            if verbose:
+                print("\n⚡ OCR Worker Pool detected - using sequential page processing")
+                print("   (OCR parallelism handled by Worker Pool)\n")
+            
+            all_chunks = []
+            for page_num in range(num_pages):
+                if verbose:
+                    print(f"\n{'='*60}")
+                    print(f"📄 Processing Page {page_num + 1}/{num_pages}")
+                    print(f"{'='*60}")
+                
+                chunk = self.extract_page(
+                    pdf_path=pdf_path,
+                    page_num=page_num,
+                    verbose=verbose,
+                    ocr_mode=ocr_mode
+                )
+                all_chunks.append(chunk)
+            
+            # Create document chunks object
+            from rag_models import DocumentChunks
+            doc_chunks = DocumentChunks(
+                filename=os.path.basename(pdf_path),
+                total_pages=num_pages,
+                chunks=all_chunks
+            )
+            
+            return doc_chunks
+        
+        # No OCR Worker Pool - use page-level multiprocessing (legacy)
+        if verbose:
+            print("\n⚠️  OCR Worker Pool not available - using legacy multiprocessing")
+            print("   (Models will be loaded per worker)\n")
+        
         # Create process pool manager
-        pool_manager = ProcessPoolManager(max_workers=max_workers)
+        # NOTE: OCR models are now in dedicated OCR Worker Pool, not page workers
+        # Page workers are lightweight and just send OCR requests to the pool
+        pool_manager = ProcessPoolManager(
+            max_workers=max_workers
+        )
         
         # Prepare arguments for each page
-        # Pass prefer_paddle as part of config
-        config = {'prefer_paddle': prefer_paddle}
+        # Pass ocr_mode as part of config
+        config = {
+            'lang': self.lang,
+            'mode': self.mode,
+            'dpi': self.dpi,
+            'enable_grid_ocr': self.enable_grid_ocr,
+            'ocr_mode': ocr_mode
+        }
         page_args = [(pdf_path, page_num, config) for page_num in range(total_pages)]
         
         # Process pages in parallel
@@ -785,14 +879,23 @@ class RAGOptimizedExtractor:
 # Worker function for multiprocessing (must be top-level for pickling)
 def _extract_page_worker(args: Tuple) -> PageChunk:
     """
-    Worker function for multiprocessing.
-    Must be top-level function for pickling.
+    Worker function for parallel page extraction.
+    Must be top-level for multiprocessing pickling.
     """
-    pdf_path, page_num, config = args
+    pdf_path, page_num, config, verbose = args
     
-    # Create extractor instance for this worker
-    extractor = RAGOptimizedExtractor()
+    # Re-instantiate extractor (lightweight)
+    extractor = RAGOptimizedExtractor(
+        lang=config.get('lang', 'ara+eng'),
+        mode=config.get('mode', 'balanced'),
+        dpi=config.get('dpi', 300),
+        enable_grid_ocr=config.get('enable_grid_ocr', False),
+        ocr_mode=config.get('ocr_mode', 'auto')
+    )
     
-    # Extract page with config
-    prefer_paddle = config.get('prefer_paddle', False) if config else False
-    return extractor.extract_page(pdf_path, page_num, verbose=False, prefer_paddle=prefer_paddle)
+    return extractor.extract_page(
+        pdf_path, 
+        page_num, 
+        verbose=verbose,
+        ocr_mode=config.get('ocr_mode', 'auto')
+    )

@@ -36,7 +36,9 @@ class ProcessPoolManager:
     def __init__(self, 
                  max_workers: Optional[int] = None,
                  memory_limit_gb: Optional[float] = None,
-                 worker_memory_mb: float = 500):
+                 worker_memory_mb: float = 500,
+                 initializer: Optional[Callable] = None,
+                 initargs: tuple = ()):
         """
         Initialize process pool manager.
         
@@ -44,10 +46,14 @@ class ProcessPoolManager:
             max_workers: Maximum number of workers (None = auto-calculate)
             memory_limit_gb: Maximum memory to use in GB (None = 80% of available)
             worker_memory_mb: Expected memory per worker in MB (default: 500 for EasyOCR)
+            initializer: Function to call when each worker starts (for pre-loading models)
+            initargs: Arguments to pass to initializer function
         """
         self.max_workers = max_workers
         self.memory_limit_gb = memory_limit_gb
         self.worker_memory_mb = worker_memory_mb
+        self.initializer = initializer
+        self.initargs = initargs
         
     def calculate_optimal_workers(self, total_pages: int) -> int:
         """
@@ -139,7 +145,11 @@ class ProcessPoolManager:
         start_time = time.time()
         
         # Process pages in parallel
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        with ProcessPoolExecutor(
+            max_workers=max_workers,
+            initializer=self.initializer,
+            initargs=self.initargs
+        ) as executor:
             # Submit all pages
             future_to_page = {
                 executor.submit(worker_func, args): args[1]  # args[1] is page_num

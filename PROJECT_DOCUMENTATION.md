@@ -14,15 +14,18 @@
 
 ## Project Overview
 
-This is an **Intelligent PDF Content Extraction System** that uses a sophisticated 7-stage pipeline to extract text and images from PDF files with high accuracy. The system supports both Arabic and English languages, handles RTL (Right-to-Left) text, and provides a web-based GUI for easy interaction.
+This is an **Intelligent PDF Content Extraction System** that uses sophisticated extraction pipelines to extract text and images from PDF files with high accuracy. The system supports both Arabic and English languages, handles RTL (Right-to-Left) text, and provides a web-based GUI for easy interaction.
 
 ### Key Features
-- **7-Stage Intelligent Extraction Pipeline** for optimal accuracy
-- **Dual OCR Engine Support**: Tesseract and EasyOCR
+- **RAG-Optimized Pipeline** with 8-stage extraction for maximum accuracy
+- **7-Stage Intelligent Extraction Pipeline** for balanced performance
+- **Triple OCR Engine Support**: Tesseract, EasyOCR, and PaddleOCR
+- **Model Pre-loading**: 10x faster extraction through worker initialization
 - **Multi-language Support**: Arabic, English, and mixed content
 - **RTL Text Detection** and handling
 - **Column Detection** for multi-column layouts
 - **Image Extraction** with OCR on embedded images
+- **Comprehensive Logging**: Real-time visibility into extraction process
 - **Web-based GUI** with real-time progress tracking
 - **Three Extraction Modes**: Fast, Balanced, Thorough
 
@@ -33,11 +36,18 @@ This is an **Intelligent PDF Content Extraction System** that uses a sophisticat
 ```
 /Users/amrnabih/Documents/Gp/Parsing/
 ├── app.py                          # Flask web application (main entry point)
+├── rag_extractor.py                # RAG-optimized 8-stage extraction pipeline
 ├── intelligent_extractor.py        # 7-stage intelligent extraction pipeline
 ├── pdf_extractor.py                # Legacy hybrid extractor (direct + OCR)
 ├── structured_extractor.py         # Structured extractor with column detection
+├── language_detection.py           # Language detection and OCR engine selection
 ├── pipeline_models.py              # Data models for pipeline stages
+├── rag_models.py                   # Data models for RAG pipeline
+├── rag_output.py                   # RAG output formatting (NDJSON, JSON, stats)
+├── process_pool_manager.py         # Multiprocessing with model pre-loading
 ├── app_viewer_routes.py            # Additional Flask routes (viewer)
+├── monitor_memory.py               # Memory usage monitoring utility
+├── download_paddleocr_models.py    # PaddleOCR model pre-download script
 ├── requirements.txt                # Python dependencies
 ├── templates/                      # HTML templates
 │   ├── index.html                  # Main upload interface

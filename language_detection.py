@@ -118,58 +118,39 @@ def detect_language_and_direction(text: str) -> LanguageDetectionResult:
     )
 
 
-def select_ocr_engine(lang_detection: LanguageDetectionResult, prefer_paddle: bool = False) -> str:
+def select_ocr_engine(lang_detection: LanguageDetectionResult, ocr_mode: str = "auto") -> str:
     """
-    Select OCR engine based on detected language.
-    
-    MANDATORY: OCR engine MUST be selected dynamically PER PAGE.
-    A fixed OCR engine for the entire document is NOT allowed.
-    
-    Rules:
-    - Arabic-dominant (rtl_ratio > 0.6) → EasyOCR
-    - English-dominant → PaddleOCR (if prefer_paddle=True) or Tesseract
-    - Mixed with significant Arabic (>30%) → EasyOCR
-    - Mixed with minimal Arabic (<30%) → PaddleOCR or Tesseract
-    
-    Rationale:
-    - EasyOCR: 2-3x slower but 15-20% more accurate for Arabic
-    - PaddleOCR: Fast and accurate for English, better than Tesseract
-    - Tesseract: 2-3x faster, sufficient for English
-    - Correct selection reduces total OCR time by 30-40%
-    
-    Performance Impact:
-    - English-only document (10 pages):
-      Before: 10 × 2.5s = 25s (all EasyOCR)
-      After: 10 × 0.7s = 7s (all Tesseract/PaddleOCR)
-      Improvement: 72% faster
-    
-    - Mixed document (5 AR + 5 EN pages):
-      Before: 10 × 2.5s = 25s (all EasyOCR)
-      After: 5×2.5s + 5×0.7s = 16s (dynamic)
-      Improvement: 36% faster
+    Select OCR engine based on detected language and user preference.
     
     Args:
         lang_detection: Result from detect_language_and_direction()
-        prefer_paddle: If True, use PaddleOCR instead of Tesseract for English
+        ocr_mode: 'auto', 'easyocr', 'paddleocr', or 'tesseract'
         
     Returns:
         "easyocr", "paddleocr", or "tesseract"
     """
-    
+    # 1. Force modes override everything
+    if ocr_mode == "easyocr":
+        return "easyocr"
+    if ocr_mode == "paddleocr":
+        return "paddleocr"
+    if ocr_mode == "tesseract":
+        return "tesseract"
+        
+    # 2. Auto mode (Smart selection)
     if lang_detection.language == "AR":
         # Arabic-dominant → EasyOCR for better accuracy
         return "easyocr"
     
     elif lang_detection.language == "EN":
-        # English-dominant → PaddleOCR or Tesseract for speed
-        return "paddleocr" if prefer_paddle else "tesseract"
+        # English-dominant → PaddleOCR is preferred for speed/accuracy over Tesseract
+        return "paddleocr"
     
     else:  # MIXED
         # Use EasyOCR only if Arabic content is meaningful (>30%)
         if lang_detection.rtl_ratio > 0.3:
             return "easyocr"
-        else:
-            return "paddleocr" if prefer_paddle else "tesseract"
+        return "paddleocr"
 
 
 def calculate_ocr_score(text: str, confidence: float, bbox: list, 

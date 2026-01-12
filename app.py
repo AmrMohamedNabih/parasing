@@ -1,10 +1,12 @@
 """
 Flask Web GUI for PDF Content Extractor
-Supports both original pipeline and RAG-optimized pipeline
+Supports both original pipeline and RAG-optimized pipeline with OCR Worker Pool
 """
 
 import os
 import json
+import signal
+import atexit
 from flask import Flask, render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from pdf_extractor import HybridPDFExtractor  # Keep for backward compatibility
@@ -12,6 +14,7 @@ from structured_extractor import StructuredPDFExtractor  # Keep for backward com
 from intelligent_extractor import IntelligentPDFExtractor  # 7-stage pipeline
 from rag_extractor import RAGOptimizedExtractor  # NEW: RAG-optimized pipeline
 from rag_output import save_ndjson, save_json, create_stats_report, save_stats_report
+from ocr_worker_pool import initialize_ocr_pool, get_ocr_pool, shutdown_ocr_pool
 import threading
 from datetime import datetime
 import shutil
@@ -28,6 +31,99 @@ os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 # Store extraction progress
 extraction_status = {}
 
+# OCR Worker Pool state
+ocr_pool = None
+ocr_ready = False
+
+
+def init_ocr_worker_pool():
+    """Initialize OCR Worker Pool at app startup."""
+    global ocr_pool, ocr_ready
+    
+    try:
+        print("\n" + "="*60)
+        print("🚀 Flask App Starting...")
+        print("="*60)
+        
+        # Initialize OCR Worker Pool
+        ocr_pool = initialize_ocr_pool(
+            num_paddle_workers=1,  # 1 PaddleOCR worker
+            num_easyocr_workers=1  # 1 EasyOCR worker
+        )
+        
+        # Mark as ready
+        ocr_ready = ocr_pool.is_ready
+        
+        if ocr_ready:
+            print("✅ Flask app ready to accept requests!\n")
+        else:
+            print("⚠️  OCR Worker Pool failed to initialize\n")
+    
+    except Exception as e:
+        print(f"❌ Failed to initialize OCR Worker Pool: {e}")
+        ocr_ready = False
+
+
+# Graceful shutdown handlers
+def shutdown_handler(signum=None, frame=None):
+    """Handle graceful shutdown."""
+    print("\n🛑 Shutting down Flask app...")
+    shutdown_ocr_pool()
+    print("✅ Shutdown complete\n")
+
+
+# Register shutdown handlers
+atexit.register(shutdown_handler)
+signal.signal(signal.SIGTERM, shutdown_handler)
+signal.signal(signal.SIGINT, shutdown_handler)
+
+
+# ==================== LOADING GATE ====================
+
+@app.before_request
+def check_ocr_ready():
+    """
+    Loading gate: Block upload requests if OCR not ready.
+    Allows health check and status endpoints.
+    """
+    # Allow these endpoints always
+    allowed_paths = ['/', '/health', '/ocr-status', '/static']
+    
+    if any(request.path.startswith(path) for path in allowed_paths):
+        return None
+    
+    # Block upload if OCR not ready
+    if request.path == '/upload' and not ocr_ready:
+        return jsonify({
+            'status': 'loading',
+            'message': 'OCR models are loading, please wait...',
+            'ready': False
+        }), 503
+
+
+@app.route('/ocr-status')
+def ocr_status():
+    """
+    OCR status endpoint for frontend polling.
+    Returns readiness state of OCR Worker Pool.
+    """
+    global ocr_pool, ocr_ready
+    
+    return jsonify({
+        'ready': ocr_ready,
+        'paddle_loaded': ocr_pool.paddle_ready.is_set() if ocr_pool else False,
+        'easyocr_loaded': ocr_pool.easyocr_ready.is_set() if ocr_pool else False,
+        'message': 'OCR Worker Pool ready' if ocr_ready else 'Loading OCR models...'
+    })
+
+
+@app.route('/health')
+def health():
+    """Health check endpoint."""
+    return jsonify({'status': 'healthy', 'ocr_ready': ocr_ready})
+
+
+# ==================== EXISTING ROUTES ====================
 
 def allowed_file(filename):
     """Check if file is a PDF"""
@@ -62,12 +158,19 @@ def extract_pdf_task_rag(task_id, pdf_files, config):
             'pipeline': 'rag'
         }
         
+        # Add debug prints to confirm config contents
+        print(f"🧵 [Thread] Starting task {task_id}")
+        print(f"📝 [Thread] Config: {config}")
+        
         # Create RAG extractor
+        # NOTE: Don't pass ocr_pool directly - it can't be pickled for multiprocessing
+        # Instead, extractor will use get_ocr_pool() from ocr_worker_pool module
         extractor = RAGOptimizedExtractor(
             lang=config.get('lang', 'ara+eng'),
             mode=config.get('mode', 'balanced'),
-            dpi=config.get('dpi', 300),
-            enable_grid_ocr=config.get('enable_grid_ocr', False)
+            dpi=int(config.get('dpi', 300)),
+            enable_grid_ocr=config.get('enable_grid_ocr', False),
+            ocr_mode=config.get('ocr_mode', 'auto') # Pass ocr_mode to extractor
         )
         
         for i, pdf_path in enumerate(pdf_files, 1):
@@ -80,7 +183,7 @@ def extract_pdf_task_rag(task_id, pdf_files, config):
                 doc_chunks = extractor.extract_document(
                     pdf_path,
                     max_workers=config.get('max_workers'),
-                    prefer_paddle=config.get('prefer_paddle', False),  # PaddleOCR preference
+                    ocr_mode=config.get('ocr_mode', 'auto'),
                     verbose=True  # Disable console output in web mode
                 )
                 
@@ -236,6 +339,9 @@ def upload_files():
         
         files = request.files.getlist('files[]')
         
+        # DEBUG: Print received form data
+        print("📝 Form Data Received:", dict(request.form))
+        
         # Get pipeline selection
         pipeline = request.form.get('pipeline', 'rag')  # Default to RAG
         
@@ -380,4 +486,17 @@ def get_structure(filename):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    # Initialize OCR Worker Pool before starting Flask
+    # This must be in __main__ block for multiprocessing to work on macOS
+    print("\n" + "="*60)
+    print("🚀 Initializing OCR Worker Pool at startup...")
+    print("="*60)
+    init_ocr_worker_pool()
+    
+    # Start Flask app
+    app.run(
+        host='0.0.0.0',
+        port=5001,
+        debug=False,  # Must be False for multiprocessing
+        use_reloader=False  # Must be False to avoid double initialization
+    )
