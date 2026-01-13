@@ -8,7 +8,7 @@
   },
   "ocr_engines": {
     "tesseract": 0,
-    "easyocr": 3
+    "easyocr": 2
   },
   "languages": {
     "arabic": 0,
@@ -16,8 +16,8 @@
     "mixed": 0
   },
   "performance": {
-    "total_time": 56.47,
-    "avg_time_per_page": 4.71,
+    "total_time": 45.34,
+    "avg_time_per_page": 5.11,
     "peak_memory_mb": 0.0,
     "worker_count": 8
   }

@@ -103,20 +103,22 @@
                         <div class="setting-item">
                             <label for="mode">Pipeline Mode</label>
                             <select id="mode" class="input">
-                                <option value="fast">Fast (1-2s/page)</option>
-                                <option value="balanced" selected>Balanced (2-3s/page)</option>
+                                <option value="fast" selected>Fast (1-2s/page) ⚡</option>
+                                <option value="balanced">Balanced (2-3s/page)</option>
                                 <option value="thorough">Thorough (3-5s/page)</option>
                             </select>
-                            <small id="modeDescription" class="setting-note">Balanced: Good speed/accuracy trade-off</small>
+                            <small id="modeDescription" class="setting-note">Fast: Minimal OCR, great for clean PDFs (default)</small>
                         </div>
                         <div class="setting-item">
                             <label for="dpi">DPI Quality</label>
                             <select id="dpi" class="input">
-                                <option value="200">200 (Fast)</option>
-                                <option value="300" selected>300 (Balanced)</option>
-                                <option value="400">400 (High Quality)</option>
+                                <option value="100">100 (Fastest) ⚡⚡</option>
+                                <option value="150" selected>150 (Fast) ⚡</option>
+                                <option value="200">200 (Balanced)</option>
+                                <option value="300">300 (High Quality)</option>
+                                <option value="400">400 (Best Quality)</option>
                             </select>
-                            <small class="setting-note">Image resolution for OCR (both pipelines)</small>
+                            <small class="setting-note">Lower = faster, higher = better quality (default: 150)</small>
                         </div>
 
                         <!-- RAG-specific settings -->

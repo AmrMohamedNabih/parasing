@@ -753,7 +753,7 @@ class RAGOptimizedExtractor:
                 # Auto-calculate based on CPU cores and page count
                 import multiprocessing
                 cpu_cores = multiprocessing.cpu_count()
-                optimal_workers = min(cpu_cores, num_pages, 8)  # Max 8 page workers by default
+                optimal_workers = min(cpu_cores, num_pages, 8)  # Max 8 page workers (optimal)
             else:
                 optimal_workers = min(max_workers, num_pages)
             

@@ -45,8 +45,8 @@ def init_ocr_worker_pool():
         print("🚀 Flask App Starting...")
         print("="*60)
         
-        # Initialize EasyOCR Worker Pool with 3 workers
-        ocr_pool = initialize_ocr_pool(num_workers=3)
+        # Initialize EasyOCR Worker Pool with 4 workers (optimal)
+        ocr_pool = initialize_ocr_pool(num_workers=4)
         
         # Mark as ready
         ocr_ready = ocr_pool.is_ready
@@ -362,10 +362,10 @@ def upload_files():
             # RAG-optimized pipeline
             config = {
                 'lang': request.form.get('language', 'ara+eng'),
-                'mode': request.form.get('mode', 'balanced'),
-                'dpi': int(request.form.get('dpi', 300)),
+                'mode': request.form.get('mode', 'fast'),  # Changed default: balanced → fast
+                'dpi': int(request.form.get('dpi', 150)),  # Changed default: 300 → 150
                 'enable_grid_ocr': request.form.get('enable_grid_ocr', 'false') == 'true',
-                'max_workers': int(request.form.get('max_workers') or 8),  # Default to 8, handle empty string
+                'max_workers': int(request.form.get('max_workers') or 8),  # Default to 8 (optimal), handle empty string
                 'output_format': request.form.get('output_format', 'ndjson'),
                 'save_stats': request.form.get('save_stats', 'false') == 'true',
             }
