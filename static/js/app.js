@@ -156,8 +156,6 @@ extractBtn.addEventListener('click', async () => {
         formData.append('max_workers', document.getElementById('maxWorkers').value);
         formData.append('save_stats', document.getElementById('saveStats').checked);
         formData.append('enable_grid_ocr', document.getElementById('enableGridOcr').checked);
-        const ocrMode = document.querySelector('input[name="ocr_mode"]:checked').value;
-        formData.append('ocr_mode', ocrMode);
     } else {
         // Intelligent pipeline settings
         formData.append('preprocess', document.getElementById('preprocess').checked);

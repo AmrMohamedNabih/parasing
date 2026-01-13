@@ -1,0 +1,24 @@
+{
+  "total_pages": 12,
+  "extraction_methods": {
+    "direct": 12,
+    "block_ocr": 0,
+    "full_page_ocr": 0,
+    "grid_ocr": 0
+  },
+  "ocr_engines": {
+    "tesseract": 0,
+    "easyocr": 3
+  },
+  "languages": {
+    "arabic": 0,
+    "english": 12,
+    "mixed": 0
+  },
+  "performance": {
+    "total_time": 0.0,
+    "avg_time_per_page": 0.0,
+    "peak_memory_mb": 0.0,
+    "worker_count": 0
+  }
+}

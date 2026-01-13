@@ -155,26 +155,6 @@
                                 </label>
                                 <small class="setting-note">✓ RAG only: ⚠️ Adds 15-20% overhead (disabled by default)</small>
                             </div>
-                            <div class="col-md-12 mb-3">
-                                <label class="form-label d-block">OCR Engine Mode</label>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="ocr_mode" id="ocr_mode_auto" value="auto" checked>
-                                    <label class="form-check-label" for="ocr_mode_auto">Auto (Recommended)</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="ocr_mode" id="ocr_mode_paddle" value="paddleocr">
-                                    <label class="form-check-label" for="ocr_mode_paddle">Force PaddleOCR</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="ocr_mode" id="ocr_mode_easy" value="easyocr">
-                                    <label class="form-check-label" for="ocr_mode_easy">Force EasyOCR</label>
-                                </div>
-                                <small class="form-text text-muted d-block mt-1">
-                                    Auto: Smart selection based on language (Best)<br>
-                                    PaddleOCR: Faster & better for English<br>
-                                    EasyOCR: Better for Arabic
-                                </small>
-                            </div>
                         </div>
 
                         <!-- Intelligent pipeline settings -->

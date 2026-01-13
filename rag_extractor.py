@@ -181,15 +181,14 @@ class RAGOptimizedExtractor:
         except Exception as e:
             print(f"⚠ PaddleOCR initialization failed: {e}")
     
-    def _run_ocr(self, image: Image.Image, engine: str, page_num: int = 0) -> str:
+    def _run_ocr(self, image: Image.Image, page_num: int = 0) -> str:
         """
-        Run OCR on image using specified engine.
+        Run OCR on image using EasyOCR.
         
         Uses OCR Worker Pool if available, otherwise falls back to legacy loading.
         
         Args:
             image: PIL Image
-            engine: "tesseract", "easyocr", or "paddleocr"
             page_num: Page number (for tracking)
             
         Returns:
@@ -199,76 +198,37 @@ class RAGOptimizedExtractor:
         from ocr_worker_pool import get_ocr_pool
         ocr_pool = get_ocr_pool()
         
-        # DEBUG: Log OCR pool status
-        print(f"🔍 [DEBUG] _run_ocr called:")
-        print(f"   • Engine: {engine}")
-        print(f"   • Page: {page_num + 1}")
-        print(f"   • OCR Pool available: {ocr_pool is not None}")
-        
         # Use OCR Worker Pool if available
-        if ocr_pool is not None and engine in ['easyocr', 'paddleocr']:
-            print(f"   ✓ Using OCR Worker Pool for {engine}")
+        if ocr_pool is not None:
             try:
                 result = ocr_pool.submit_ocr_task(
                     image=image,
-                    engine='paddle' if engine == 'paddleocr' else 'easyocr',
                     page_number=page_num,
                     language=self.lang
                 )
                 
                 if result['error']:
-                    print(f"OCR Worker Pool error: {result['error']}, falling back to Tesseract")
-                    return self._run_tesseract(image)
+                    print(f"OCR Worker Pool error: {result['error']}")
+                    return ""
                 
                 return result['text']
             except Exception as e:
-                print(f"OCR Worker Pool error: {e}, falling back to Tesseract")
-                return self._run_tesseract(image)
+                print(f"OCR Worker Pool error: {repr(e)}")
+                return ""
         
-        # Legacy path: Load models locally (for CLI usage or if pool not available)
-        if engine == "easyocr":
-            if self.easyocr_reader is None:
-                self._init_easyocr()
-            
-            if self.easyocr_reader is not None:
-                try:
-                    img_array = np.array(image)
-                    results = self.easyocr_reader.readtext(img_array, detail=1)
-                    text_parts = [text for (bbox, text, conf) in results if conf > 0.3]
-                    return " ".join(text_parts)
-                except Exception as e:
-                    print(f"EasyOCR error: {e}, falling back to Tesseract")
+        # Legacy path: Load EasyOCR locally (for CLI usage or if pool not available)
+        if self.easyocr_reader is None:
+            self._init_easyocr()
         
-        elif engine == "paddleocr":
-            if self.paddleocr_reader is None:
-                self._init_paddleocr()
-            
-            if self.paddleocr_reader is not None:
-                try:
-                    img_array = np.array(image)
-                    results = self.paddleocr_reader.ocr(img_array)
-                    
-                    text_parts = []
-                    if results and isinstance(results, list) and len(results) > 0:
-                        if results[0] is not None and isinstance(results[0], list):
-                            for line in results[0]:
-                                try:
-                                    if line and isinstance(line, (list, tuple)) and len(line) >= 2:
-                                        text_info = line[1]
-                                        if isinstance(text_info, (list, tuple)) and len(text_info) >= 2:
-                                            text = str(text_info[0])
-                                            conf = float(text_info[1])
-                                            if conf > 0.5 and text.strip():
-                                                text_parts.append(text)
-                                except (IndexError, TypeError, ValueError):
-                                    continue
-                    
-                    return " ".join(text_parts) if text_parts else ""
-                except Exception as e:
-                    print(f"PaddleOCR error: {e}, falling back to Tesseract")
-        
-        # Tesseract (default fallback)
-        return self._run_tesseract(image)
+        if self.easyocr_reader is not None:
+            try:
+                img_array = np.array(image)
+                results = self.easyocr_reader.readtext(img_array, detail=1)
+                text_parts = [text for (bbox, text, conf) in results if conf > 0.3]
+                return " ".join(text_parts)
+            except Exception as e:
+                print(f"EasyOCR error: {e}")
+                return ""
     
     def _run_tesseract(self, image: Image.Image) -> str:
         """Run Tesseract OCR (extracted for reuse)."""
@@ -399,7 +359,7 @@ class RAGOptimizedExtractor:
                 cropped = page_image.crop((x0, y0, x1, y1))
                 
                 # Run OCR
-                ocr_text = self._run_ocr(cropped, ocr_engine)
+                ocr_text = self._run_ocr(cropped)
                 
                 if len(ocr_text.strip()) > len(block['text'].strip()):
                     # OCR improved the text
@@ -434,7 +394,7 @@ class RAGOptimizedExtractor:
             return None
         
         # Run OCR on entire page
-        text = self._run_ocr(page_image, ocr_engine)
+        text = self._run_ocr(page_image)
         
         if text.strip():
             return {
@@ -495,7 +455,7 @@ class RAGOptimizedExtractor:
                         continue
                     
                     # Run OCR on image
-                    ocr_text = self._run_ocr(image, ocr_engine)
+                    ocr_text = self._run_ocr(image)
                     
                     if ocr_text.strip() and len(ocr_text.strip()) > 5:
                         # Get image position on page
@@ -625,11 +585,10 @@ class RAGOptimizedExtractor:
                 print(f"  ✓ Direction: {lang_detection.text_direction}")
                 print(f"  ✓ Arabic ratio: {lang_detection.rtl_ratio:.2%}")
             
-            # Select OCR engine based on language and preference
-            # Select OCR engine based on language and preference
-            ocr_engine = select_ocr_engine(lang_detection, ocr_mode=ocr_mode)
+            # Hardcode OCR engine to EasyOCR
+            ocr_engine = "easyocr"
             if verbose:
-                print(f"  ✓ OCR Engine selected: {ocr_engine.upper()}")
+                print(f"  ✓ OCR Engine selected: EASYOCR")
             
             # Create image cache and render page ONCE
             if verbose:
@@ -807,7 +766,6 @@ class RAGOptimizedExtractor:
                 all_chunks.append(chunk)
             
             # Create document chunks object
-            from rag_models import DocumentChunks
             doc_chunks = DocumentChunks(
                 filename=os.path.basename(pdf_path),
                 total_pages=num_pages,
@@ -882,20 +840,19 @@ def _extract_page_worker(args: Tuple) -> PageChunk:
     Worker function for parallel page extraction.
     Must be top-level for multiprocessing pickling.
     """
-    pdf_path, page_num, config, verbose = args
+    pdf_path, page_num, config = args
     
     # Re-instantiate extractor (lightweight)
     extractor = RAGOptimizedExtractor(
         lang=config.get('lang', 'ara+eng'),
         mode=config.get('mode', 'balanced'),
         dpi=config.get('dpi', 300),
-        enable_grid_ocr=config.get('enable_grid_ocr', False),
-        ocr_mode=config.get('ocr_mode', 'auto')
+        enable_grid_ocr=config.get('enable_grid_ocr', False)
     )
     
     return extractor.extract_page(
         pdf_path, 
         page_num, 
-        verbose=verbose,
+        verbose=False,  # Disable verbose in worker processes
         ocr_mode=config.get('ocr_mode', 'auto')
     )

@@ -45,11 +45,8 @@ def init_ocr_worker_pool():
         print("🚀 Flask App Starting...")
         print("="*60)
         
-        # Initialize OCR Worker Pool
-        ocr_pool = initialize_ocr_pool(
-            num_paddle_workers=1,  # 1 PaddleOCR worker
-            num_easyocr_workers=1  # 1 EasyOCR worker
-        )
+        # Initialize EasyOCR Worker Pool
+        ocr_pool = initialize_ocr_pool(num_workers=1)
         
         # Mark as ready
         ocr_ready = ocr_pool.is_ready
@@ -170,7 +167,6 @@ def extract_pdf_task_rag(task_id, pdf_files, config):
             mode=config.get('mode', 'balanced'),
             dpi=int(config.get('dpi', 300)),
             enable_grid_ocr=config.get('enable_grid_ocr', False),
-            ocr_mode=config.get('ocr_mode', 'auto') # Pass ocr_mode to extractor
         )
         
         for i, pdf_path in enumerate(pdf_files, 1):
@@ -182,8 +178,6 @@ def extract_pdf_task_rag(task_id, pdf_files, config):
                 # Extract document
                 doc_chunks = extractor.extract_document(
                     pdf_path,
-                    max_workers=config.get('max_workers'),
-                    ocr_mode=config.get('ocr_mode', 'auto'),
                     verbose=True  # Disable console output in web mode
                 )
                 
@@ -373,7 +367,6 @@ def upload_files():
                 'max_workers': int(request.form.get('max_workers')) if request.form.get('max_workers') else None,
                 'output_format': request.form.get('output_format', 'ndjson'),
                 'save_stats': request.form.get('save_stats', 'false') == 'true',
-                'prefer_paddle': request.form.get('prefer_paddle', 'false') == 'true'  # PaddleOCR preference
             }
             
             # Start extraction in background
