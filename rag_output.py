@@ -186,6 +186,7 @@ def create_stats_report(doc_chunks: DocumentChunks) -> ProcessingStats:
     stats.total_pages = doc_chunks.total_pages
     stats.total_processing_time = doc_chunks.total_processing_time
     stats.average_time_per_page = doc_chunks.total_processing_time / doc_chunks.total_pages if doc_chunks.total_pages > 0 else 0
+    stats.worker_count = doc_chunks.worker_count  # Set worker count from document
     
     for chunk in doc_chunks.chunks:
         # Extraction methods

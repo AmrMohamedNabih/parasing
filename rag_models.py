@@ -127,6 +127,7 @@ class DocumentChunks:
     # Document-level metadata (minimal)
     total_processing_time: float = 0.0
     languages_detected: List[str] = field(default_factory=list)
+    worker_count: int = 0  # Number of parallel page workers used
     
     @property
     def successful_pages(self) -> int:

@@ -45,8 +45,8 @@ def init_ocr_worker_pool():
         print("🚀 Flask App Starting...")
         print("="*60)
         
-        # Initialize EasyOCR Worker Pool
-        ocr_pool = initialize_ocr_pool(num_workers=1)
+        # Initialize EasyOCR Worker Pool with 3 workers
+        ocr_pool = initialize_ocr_pool(num_workers=3)
         
         # Mark as ready
         ocr_ready = ocr_pool.is_ready
@@ -175,10 +175,11 @@ def extract_pdf_task_rag(task_id, pdf_files, config):
                 extraction_status[task_id]['current'] = i
                 extraction_status[task_id]['current_file'] = filename
                 
-                # Extract document
+                # Extract document with parallel workers
                 doc_chunks = extractor.extract_document(
                     pdf_path,
-                    verbose=True  # Disable console output in web mode
+                    max_workers=config.get('max_workers'),  # Pass worker count for parallel processing
+                    verbose=True
                 )
                 
                 # Prepare output paths
@@ -364,7 +365,7 @@ def upload_files():
                 'mode': request.form.get('mode', 'balanced'),
                 'dpi': int(request.form.get('dpi', 300)),
                 'enable_grid_ocr': request.form.get('enable_grid_ocr', 'false') == 'true',
-                'max_workers': int(request.form.get('max_workers')) if request.form.get('max_workers') else None,
+                'max_workers': int(request.form.get('max_workers') or 8),  # Default to 8, handle empty string
                 'output_format': request.form.get('output_format', 'ndjson'),
                 'save_stats': request.form.get('save_stats', 'false') == 'true',
             }

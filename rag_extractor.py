@@ -744,33 +744,100 @@ class RAGOptimizedExtractor:
         doc.close()
         
         if ocr_pool is not None:
-            # OCR Worker Pool is active - process pages SEQUENTIALLY
-            # The OCR Worker Pool already provides parallelism
-            if verbose:
-                print("\n⚡ OCR Worker Pool detected - using sequential page processing")
-                print("   (OCR parallelism handled by Worker Pool)\n")
+            # OCR Worker Pool is active - use parallel page processing with ThreadPoolExecutor
+            # ThreadPoolExecutor for page-level parallelism + OCR Worker Pool for OCR parallelism
             
-            all_chunks = []
-            for page_num in range(num_pages):
-                if verbose:
-                    print(f"\n{'='*60}")
-                    print(f"📄 Processing Page {page_num + 1}/{num_pages}")
-                    print(f"{'='*60}")
+            # Calculate optimal number of page workers
+            # Use ThreadPoolExecutor since OCR Worker Pool handles the heavy computation
+            if max_workers is None:
+                # Auto-calculate based on CPU cores and page count
+                import multiprocessing
+                cpu_cores = multiprocessing.cpu_count()
+                optimal_workers = min(cpu_cores, num_pages, 8)  # Max 8 page workers by default
+            else:
+                optimal_workers = min(max_workers, num_pages)
+            
+            if verbose:
+                print(f"\n⚡ OCR Worker Pool detected - using parallel page processing")
+                print(f"   • Page workers: {optimal_workers}")
+                print(f"   • Processing mode: Concurrent")
+                print(f"   • OCR parallelism: Handled by Worker Pool\n")
+            
+            # Use ThreadPoolExecutor for lightweight page-level parallelism
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            
+            all_chunks = [None] * num_pages  # Pre-allocate to maintain page order
+            completed_count = 0
+            
+            with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
+                # Submit all pages
+                future_to_page = {
+                    executor.submit(
+                        self.extract_page,
+                        pdf_path=pdf_path,
+                        page_num=page_num,
+                        verbose=False,  # Disable verbose in parallel mode to avoid output mixing
+                        ocr_mode=ocr_mode
+                    ): page_num
+                    for page_num in range(num_pages)
+                }
                 
-                chunk = self.extract_page(
-                    pdf_path=pdf_path,
-                    page_num=page_num,
-                    verbose=verbose,
-                    ocr_mode=ocr_mode
-                )
-                all_chunks.append(chunk)
+                # Collect results as they complete
+                for future in as_completed(future_to_page):
+                    page_num = future_to_page[future]
+                    try:
+                        chunk = future.result()
+                        all_chunks[page_num] = chunk
+                        completed_count += 1
+                        
+                        if verbose:
+                            print(f"✓ Page {page_num + 1}/{num_pages} completed "
+                                  f"({completed_count}/{num_pages}, "
+                                  f"{completed_count/num_pages*100:.1f}%)")
+                    
+                    except Exception as e:
+                        print(f"❌ Error processing page {page_num + 1}: {e}")
+                        # Create error chunk
+                        all_chunks[page_num] = PageChunk(
+                            page_number=page_num + 1,
+                            text="",
+                            language="UNKNOWN",
+                            text_direction="LTR",
+                            average_confidence=0.0,
+                            word_count=0,
+                            char_count=0,
+                            status="failed",
+                            error=str(e),
+                            processing_time=0.0
+                        )
+            
+            # Calculate total time
+            total_time = time.time() - start_time
             
             # Create document chunks object
             doc_chunks = DocumentChunks(
                 filename=os.path.basename(pdf_path),
                 total_pages=num_pages,
-                chunks=all_chunks
+                chunks=all_chunks,
+                total_processing_time=total_time,
+                languages_detected=list(set(c.language for c in all_chunks if c.language != "UNKNOWN")),
+                worker_count=optimal_workers  # Track number of parallel workers used
             )
+            
+            if verbose:
+                print(f"\n{'='*60}")
+                print(f"✅ EXTRACTION COMPLETE")
+                print(f"{'='*60}")
+                print(f"📊 Statistics:")
+                print(f"   • Total pages: {doc_chunks.total_pages}")
+                print(f"   • Successful: {doc_chunks.successful_pages}")
+                print(f"   • Failed: {doc_chunks.failed_pages}")
+                print(f"   • Total words: {doc_chunks.total_words:,}")
+                print(f"   • Avg confidence: {doc_chunks.average_confidence:.2%}")
+                print(f"   • Languages: {', '.join(doc_chunks.languages_detected)}")
+                print(f"   • Total time: {total_time:.2f}s")
+                print(f"   • Throughput: {doc_chunks.total_pages / total_time * 60:.1f} pages/min")
+                print(f"{'='*60}\n")
             
             return doc_chunks
         
@@ -813,7 +880,8 @@ class RAGOptimizedExtractor:
             total_pages=total_pages,
             chunks=page_chunks,
             total_processing_time=total_time,
-            languages_detected=list(set(c.language for c in page_chunks))
+            languages_detected=list(set(c.language for c in page_chunks)),
+            worker_count=pool_manager.max_workers  # Track number of parallel workers used
         )
         
         if verbose:
