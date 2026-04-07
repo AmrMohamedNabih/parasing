@@ -4,6 +4,7 @@ RAG Parsing Server — FastAPI Application
 Phase 1: Intelligent PDF extraction with structured DB persistence.
 """
 
+import asyncio
 import logging
 import sys
 from contextlib import asynccontextmanager
@@ -24,6 +25,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+from app.workers.kafka_consumer import consume_document_events
+
 
 # ============================================================
 # Lifespan — startup / shutdown hooks
@@ -40,14 +43,23 @@ async def lifespan(app: FastAPI):
     logger.info(f"  DB     : {settings.DATABASE_URL[:50]}...")
     logger.info(f"  Storage: {settings.PDF_STORAGE_PATH}")
     logger.info(f"  Debug  : {settings.DEBUG}")
+    logger.info(f"  Kafka  : {settings.KAFKA_BOOTSTRAP_SERVERS}")
     logger.info("=" * 60)
 
     # Ensure storage directory exists
     Path(settings.PDF_STORAGE_PATH).mkdir(parents=True, exist_ok=True)
 
+    # Start Kafka consumer background task
+    consumer_task = asyncio.create_task(consume_document_events())
+
     yield  # ← server is live here
 
     logger.info("RAG Parsing Server shutting down")
+    consumer_task.cancel()
+    try:
+        await consumer_task
+    except asyncio.CancelledError:
+        pass
 
 
 # ============================================================

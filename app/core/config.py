@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     PORT: int = 8000
     DEBUG: bool = False
 
+    # Kafka Integration
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9094"
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 
