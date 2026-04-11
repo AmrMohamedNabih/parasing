@@ -23,6 +23,10 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+# Suppress noisy debug logs from internal libraries
+logging.getLogger("aiokafka").setLevel(logging.INFO)
+logging.getLogger("watchfiles").setLevel(logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 from app.workers.kafka_consumer import consume_document_events
