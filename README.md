@@ -73,6 +73,7 @@ alembic upgrade head
 ### 5. Start the Server
 
 ```bash
+.\venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload --port 8000
 ```
 

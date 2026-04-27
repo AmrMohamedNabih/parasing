@@ -23,21 +23,54 @@ async def _get_or_create_user(db, user_id: uuid.UUID) -> User:
     if user is None:
         user = User(id=user_id)
         db.add(user)
-        await db.flush()
-        logger.info(f"Kafka consumer auto-created user {user_id}")
+        try:
+            await db.flush()
+            logger.info(f"Kafka consumer auto-created user {user_id}")
+        except Exception:
+            await db.rollback()
+            result = await db.execute(select(User).where(User.id == user_id))
+            user = result.scalar_one_or_none()
+            if not user:
+                raise
     return user
 
 
 async def _get_or_create_subject(
     db, subject_id: uuid.UUID, user_id: uuid.UUID, subject_name: str
 ) -> Subject:
+    # Try finding by ID first
     result = await db.execute(select(Subject).where(Subject.id == subject_id))
     subject = result.scalar_one_or_none()
+
+    if subject is None:
+        # If ID not found, check if a subject with this name already exists for the user
+        # to avoid violating the uq_subjects_user_id_name constraint.
+        result = await db.execute(
+            select(Subject).where(
+                Subject.user_id == user_id,
+                Subject.name == subject_name
+            )
+        )
+        subject = result.scalar_one_or_none()
+
     if subject is None:
         subject = Subject(id=subject_id, user_id=user_id, name=subject_name)
         db.add(subject)
-        await db.flush()
-        logger.info(f"Kafka consumer auto-created subject {subject_id}")
+        try:
+            await db.flush()
+            logger.info(f"Kafka consumer auto-created subject {subject_id}")
+        except Exception as e:
+            # Handle potential race condition if another process created it simultaneously
+            await db.rollback()
+            result = await db.execute(
+                select(Subject).where(
+                    Subject.user_id == user_id,
+                    Subject.name == subject_name
+                )
+            )
+            subject = result.scalar_one_or_none()
+            if not subject:
+                raise e
     return subject
 
 
@@ -78,7 +111,7 @@ async def consume_document_events():
 
                 async with AsyncSessionFactory() as db:
                     await _get_or_create_user(db, user_id)
-                    await _get_or_create_subject(db, subject_id, user_id, "default")
+                    subject = await _get_or_create_subject(db, subject_id, user_id, "default")
 
                     pdf_path = storage_service.resolve_path(user_id, subject_id, document_id)
 
@@ -87,7 +120,7 @@ async def consume_document_events():
                     if not doc:
                         doc = Document(
                             id=document_id,
-                            subject_id=subject_id,
+                            subject_id=subject.id,
                             user_id=user_id,
                             filename=filename,
                             status=DocumentStatus.PENDING.value,
@@ -96,7 +129,17 @@ async def consume_document_events():
                             pdf_path=pdf_path,
                         )
                         db.add(doc)
-                        await db.commit()
+                    else:
+                        # Update existing document in case metadata or path changed
+                        doc.subject_id = subject.id
+                        doc.filename = filename
+                        doc.pipeline_mode = mode
+                        doc.ocr_engine = engine
+                        doc.pdf_path = pdf_path
+                        doc.status = DocumentStatus.PENDING.value
+                        doc.error_message = None
+
+                    await db.commit()
 
                 # Dispatch background task for the PDF extraction
                 asyncio.create_task(run_parsing_job(document_id))
