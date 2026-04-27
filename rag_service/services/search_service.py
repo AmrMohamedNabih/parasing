@@ -53,14 +53,29 @@ class SearchService:
         if document_id:
             must.append(FieldCondition(key="document_id", match=MatchValue(value=document_id)))
 
-        results: list[ScoredPoint] = self._client.search(
-            collection_name="rag_text_blocks",
-            query_vector=query_vector,
-            query_filter=Filter(must=must),
-            limit=top_k,
-            score_threshold=settings.SIMILARITY_THRESHOLD,
-            with_payload=True,
-        )
+        if not hasattr(self._client, "search"):
+            logger.error("QdrantClient missing 'search' method. Available: %s", dir(self._client))
+            # Try fallback if possible
+            if hasattr(self._client, "query_points"):
+                 results = self._client.query_points(
+                    collection_name="rag_text_blocks",
+                    query=query_vector,
+                    query_filter=Filter(must=must),
+                    limit=top_k,
+                    score_threshold=settings.SIMILARITY_THRESHOLD,
+                    with_payload=True,
+                ).points
+            else:
+                raise AttributeError("QdrantClient has neither 'search' nor 'query_points'")
+        else:
+            results: list[ScoredPoint] = self._client.search(
+                collection_name="rag_text_blocks",
+                query_vector=query_vector,
+                query_filter=Filter(must=must),
+                limit=top_k,
+                score_threshold=settings.SIMILARITY_THRESHOLD,
+                with_payload=True,
+            )
 
         # ── Arabic majority detection — from payload, never from question ──
         rtl_count = sum(

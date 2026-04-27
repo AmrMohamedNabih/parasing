@@ -17,10 +17,17 @@ class RagSettings(BaseSettings):
 
     # ── Qdrant ───────────────────────────────────────────────────────────
     QDRANT_URL: str = "http://localhost:6333"
-
-    # ── Gemini ───────────────────────────────────────────────────────────
-    GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+ 
+    # ── LLM Settings ─────────────────────────────────────────────────────
+    LLM_PROVIDER: str = "gemini"  # "gemini" | "openai"
+    
+    # Gemini
+    GEMINI_API_KEY: str = "AIzaSyCoPIX8X4TgMYwusUxmQt_B873kWl-bquE"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    
+    # OpenAI
+    OPENAI_API_KEY: str = "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"
+    OPENAI_MODEL: str = "gpt-4.1-mini"
 
     # ── Kafka topics ─────────────────────────────────────────────────────
     KAFKA_QUESTION_TOPIC: str = "question-requests"

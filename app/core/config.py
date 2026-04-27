@@ -22,7 +22,29 @@ class Settings(BaseSettings):
     # Kafka Integration
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9094"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    # --- Phase 2: RAG Query Service ---
+
+    # Qdrant Vector Database
+    QDRANT_URL: str = "http://localhost:6333"
+
+    # Gemini LLM
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.0-flash"
+
+    # Kafka Topics
+    KAFKA_QUESTION_TOPIC: str = "question-requests"
+    KAFKA_RESPONSE_TOPIC: str = "question-responses"
+    KAFKA_ERROR_TOPIC: str = "question-errors"
+
+    # Search
+    TOP_K_RESULTS: int = 8
+    SIMILARITY_THRESHOLD: float = 0.55
+
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "extra": "ignore"  # Allow extra fields without crashing
+    }
 
 
 settings = Settings()

@@ -1,21 +1,7 @@
 """
 Generation Service
 ------------------
-Streams answers from Gemini using a thread-bridge queue pattern.
-
-The entire Gemini SDK iteration (including each next() call on the stream)
-runs inside a daemon thread. Text chunks are forwarded to the async caller
-via asyncio.run_coroutine_threadsafe → asyncio.Queue, keeping the event
-loop completely unblocked between chunks.
-
-Key decisions:
-- majority_rtl overrides the language hint to "ar" when >50% of retrieved
-  passages have direction='rtl'.
-- ResourceExhausted is retried once after 10 s.
-- Each chunk.text is accessed with getattr guard to handle finish-reason
-  chunks that lack a .text attribute.
-- The async generator is always consumed under asyncio.wait_for(timeout=120)
-  in the Kafka consumer so a stalled Gemini stream never holds a semaphore slot.
+Streams answers from Gemini or OpenAI using a thread-bridge queue pattern.
 """
 
 import asyncio
@@ -26,17 +12,17 @@ from typing import AsyncGenerator
 
 import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
+from openai import OpenAI
 
 from rag_service.config import settings
 from rag_service.schemas import SourceBlock
 
 logger = logging.getLogger(__name__)
 
-_GENERATION_CONFIG = genai.types.GenerationConfig(
+_GENERATION_CONFIG_GEMINI = genai.types.GenerationConfig(
     temperature=0.2,
     max_output_tokens=1024,
 )
-
 
 def _system_prompt(language: str) -> str:
     base = (
@@ -71,14 +57,23 @@ def _user_prompt(question: str, scored_points: list) -> str:
 class GenerationService:
     def __init__(self) -> None:
         self._configured = False
+        self._openai_client = None
 
     def configure(self) -> None:
-        if settings.GEMINI_API_KEY:
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            self._configured = True
-            logger.info("Gemini configured — model: %s", settings.GEMINI_MODEL)
-        else:
-            logger.warning("GEMINI_API_KEY is empty — generation will not work.")
+        if settings.LLM_PROVIDER == "gemini":
+            if settings.GEMINI_API_KEY:
+                genai.configure(api_key=settings.GEMINI_API_KEY)
+                self._configured = True
+                logger.info("Gemini configured — model: %s", settings.GEMINI_MODEL)
+            else:
+                logger.warning("GEMINI_API_KEY is empty.")
+        elif settings.LLM_PROVIDER == "openai":
+            if settings.OPENAI_API_KEY:
+                self._openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+                self._configured = True
+                logger.info("OpenAI configured — model: %s", settings.OPENAI_MODEL)
+            else:
+                logger.warning("OPENAI_API_KEY is empty.")
 
     def build_sources(self, scored_points: list) -> list[SourceBlock]:
         return [
@@ -99,55 +94,20 @@ class GenerationService:
         language: str,
         majority_rtl: bool,
     ) -> AsyncGenerator[str, None]:
-        """
-        Async generator yielding text fragments from Gemini.
-
-        Thread-bridge pattern: the full SDK iteration runs in a daemon thread;
-        chunks arrive in an asyncio.Queue read by this async generator.
-        """
         if majority_rtl:
             language = "ar"
 
-        prompt = (
-            _system_prompt(language)
-            + "\n\n"
-            + _user_prompt(question, scored_points)
-        )
+        system_msg = _system_prompt(language)
+        user_msg = _user_prompt(question, scored_points)
 
         queue: asyncio.Queue[str | None] = asyncio.Queue()
         loop = asyncio.get_event_loop()
 
         def _run_stream() -> None:
-            model = genai.GenerativeModel(settings.GEMINI_MODEL)
-
-            def _stream_once() -> None:
-                response = model.generate_content(
-                    prompt, stream=True, generation_config=_GENERATION_CONFIG
-                )
-                for chunk in response:
-                    text = getattr(chunk, "text", None)   # guard: finish-reason chunks
-                    if text:
-                        asyncio.run_coroutine_threadsafe(queue.put(text), loop)
-
-            try:
-                _stream_once()
-            except ResourceExhausted as exc:
-                logger.warning("Gemini ResourceExhausted — retrying in 10 s: %s", exc)
-                time.sleep(10)
-                try:
-                    _stream_once()
-                except Exception as retry_exc:
-                    logger.error("Gemini retry failed: %s", retry_exc)
-                    asyncio.run_coroutine_threadsafe(
-                        queue.put(f"\n[Generation error: {retry_exc}]"), loop
-                    )
-            except Exception as exc:
-                logger.error("Gemini generation error: %s", exc)
-                asyncio.run_coroutine_threadsafe(
-                    queue.put(f"\n[Generation error: {exc}]"), loop
-                )
-            finally:
-                asyncio.run_coroutine_threadsafe(queue.put(None), loop)  # sentinel
+            if settings.LLM_PROVIDER == "gemini":
+                self._run_gemini_stream(system_msg + "\n\n" + user_msg, queue, loop)
+            else:
+                self._run_openai_stream(system_msg, user_msg, queue, loop)
 
         thread = threading.Thread(target=_run_stream, daemon=True)
         thread.start()
@@ -157,6 +117,47 @@ class GenerationService:
             if chunk is None:
                 break
             yield chunk
+
+    def _run_gemini_stream(self, prompt, queue, loop):
+        model = genai.GenerativeModel(settings.GEMINI_MODEL)
+        try:
+            response = model.generate_content(
+                prompt, stream=True, generation_config=_GENERATION_CONFIG_GEMINI
+            )
+            for chunk in response:
+                text = getattr(chunk, "text", None)
+                if text:
+                    asyncio.run_coroutine_threadsafe(queue.put(text), loop)
+        except ResourceExhausted:
+            logger.warning("Gemini Quota Exceeded")
+            asyncio.run_coroutine_threadsafe(queue.put("\n[Gemini Quota Exceeded. Please try again later.]"), loop)
+        except Exception as exc:
+            logger.error("Gemini error: %s", exc)
+            asyncio.run_coroutine_threadsafe(queue.put(f"\n[Generation error: {exc}]"), loop)
+        finally:
+            asyncio.run_coroutine_threadsafe(queue.put(None), loop)
+
+    def _run_openai_stream(self, system_msg, user_msg, queue, loop):
+        try:
+            response = self._openai_client.chat.completions.create(
+                model=settings.OPENAI_MODEL,
+                messages=[
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg},
+                ],
+                stream=True,
+                temperature=0.2,
+                max_tokens=1024,
+            )
+            for chunk in response:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    text = chunk.choices[0].delta.content
+                    asyncio.run_coroutine_threadsafe(queue.put(text), loop)
+        except Exception as exc:
+            logger.error("OpenAI error: %s", exc)
+            asyncio.run_coroutine_threadsafe(queue.put(f"\n[Generation error: {exc}]"), loop)
+        finally:
+            asyncio.run_coroutine_threadsafe(queue.put(None), loop)
 
 
 generation_service = GenerationService()

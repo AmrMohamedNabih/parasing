@@ -100,6 +100,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    body = await request.body()
+    logger.error("Validation error for %s %s", request.method, request.url)
+    logger.error("Error detail: %s", exc.errors())
+    logger.error("Raw body: %s", body.decode() if body else "EMPTY")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": body.decode() if body else None},
+    )
+
 from rag_service.api.routes import router
 app.include_router(router)
 
