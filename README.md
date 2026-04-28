@@ -127,7 +127,7 @@ PDF Upload API     →  PostgreSQL  ←  Embedding Worker (asyncpg poll)
 ```bash
 QDRANT_URL=http://localhost:6333
 GEMINI_API_KEY=your-key-here
-GEMINI_MODEL=gemini-2.0-flash
+GEMINI_MODEL=gemini-2.5-flash
 KAFKA_QUESTION_TOPIC=question-requests
 KAFKA_RESPONSE_TOPIC=question-responses
 KAFKA_ERROR_TOPIC=question-errors

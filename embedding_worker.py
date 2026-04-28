@@ -38,7 +38,7 @@ DATABASE_URL: str = os.getenv(
     "DATABASE_URL",
     "postgresql://rag_user:rag_password@localhost:5432/rag_db",
 )
-QDRANT_URL: str = os.getenv("QDRANT_URL", "http://localhost:6333")
+QDRANT_URL: str = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
 COLLECTION_NAME = "rag_text_blocks"
 VECTOR_DIM = 384
 POLL_INTERVAL = 30          # seconds between polls
@@ -85,7 +85,7 @@ class EmbeddingWorker:
         logger.info("Model loaded.")
 
         logger.info("Connecting to Qdrant at %s", QDRANT_URL)
-        self.qdrant = QdrantClient(url=QDRANT_URL)
+        self.qdrant = QdrantClient(url=QDRANT_URL, timeout=60)
         await self._ensure_collection()
 
         logger.info("Connecting to PostgreSQL...")
@@ -109,6 +109,7 @@ class EmbeddingWorker:
         def _create() -> None:
             names = [c.name for c in self.qdrant.get_collections().collections]
             if COLLECTION_NAME not in names:
+                logger.info("Creating Qdrant collection '%s'...", COLLECTION_NAME)
                 self.qdrant.create_collection(
                     collection_name=COLLECTION_NAME,
                     vectors_config=VectorParams(

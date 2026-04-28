@@ -25,11 +25,11 @@ class Settings(BaseSettings):
     # --- Phase 2: RAG Query Service ---
 
     # Qdrant Vector Database
-    QDRANT_URL: str = "http://localhost:6333"
+    QDRANT_URL: str = "http://127.0.0.1:6333"
 
     # Gemini LLM
-    GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+    GEMINI_API_KEY: str = "AIzaSyD0HaIMQ1kG7vSwOzLFI21B2aY7p-adwhg"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # Kafka Topics
     KAFKA_QUESTION_TOPIC: str = "question-requests"

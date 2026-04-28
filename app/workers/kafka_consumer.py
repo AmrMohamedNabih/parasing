@@ -38,39 +38,49 @@ async def _get_or_create_user(db, user_id: uuid.UUID) -> User:
 async def _get_or_create_subject(
     db, subject_id: uuid.UUID, user_id: uuid.UUID, subject_name: str
 ) -> Subject:
-    # Try finding by ID first
+    """
+    Ensures a subject exists with the given ID.
+    If the ID is missing but the name is taken, we rename the existing subject
+    to free up the name for the new ID (which is the source of truth from Java).
+    """
+    # 1. Try finding by ID first — if found, we are done
     result = await db.execute(select(Subject).where(Subject.id == subject_id))
     subject = result.scalar_one_or_none()
+    if subject:
+        return subject
 
-    if subject is None:
-        # If ID not found, check if a subject with this name already exists for the user
-        # to avoid violating the uq_subjects_user_id_name constraint.
-        result = await db.execute(
-            select(Subject).where(
-                Subject.user_id == user_id,
-                Subject.name == subject_name
-            )
+    # 2. ID not found. Check if the name is taken by another ID for this user.
+    result = await db.execute(
+        select(Subject).where(
+            Subject.user_id == user_id,
+            Subject.name == subject_name
         )
-        subject = result.scalar_one_or_none()
+    )
+    conflicting_subject = result.scalar_one_or_none()
 
-    if subject is None:
-        subject = Subject(id=subject_id, user_id=user_id, name=subject_name)
-        db.add(subject)
-        try:
-            await db.flush()
-            logger.info(f"Kafka consumer auto-created subject {subject_id}")
-        except Exception as e:
-            # Handle potential race condition if another process created it simultaneously
-            await db.rollback()
-            result = await db.execute(
-                select(Subject).where(
-                    Subject.user_id == user_id,
-                    Subject.name == subject_name
-                )
-            )
-            subject = result.scalar_one_or_none()
-            if not subject:
-                raise e
+    if conflicting_subject:
+        # Resolve conflict: Rename the old one to free up the name
+        logger.warning(
+            f"Subject name conflict for '{subject_name}' (user {user_id}). "
+            f"Existing ID {conflicting_subject.id} != New ID {subject_id}. "
+            f"Renaming old subject to free name."
+        )
+        conflicting_subject.name = f"{subject_name}_old_{str(conflicting_subject.id)[:8]}"
+        await db.flush()
+
+    # 3. Create the new subject with the correct ID
+    subject = Subject(id=subject_id, user_id=user_id, name=subject_name)
+    db.add(subject)
+    try:
+        await db.flush()
+        logger.info(f"Kafka consumer created subject {subject_id} ('{subject_name}')")
+    except Exception as e:
+        await db.rollback()
+        # Race condition check
+        result = await db.execute(select(Subject).where(Subject.id == subject_id))
+        subject = result.scalar_one_or_none()
+        if not subject:
+            raise e
     return subject
 
 
@@ -106,12 +116,13 @@ async def consume_document_events():
                 subject_id = uuid.UUID(event['subjectId'])
                 user_id = uuid.UUID(event['userId'])
                 filename = event.get('fileName', 'unknown.pdf')
+                subject_name = event.get('subjectName', 'default')
                 mode = event.get('pipelineMode', settings.DEFAULT_PIPELINE_MODE)
                 engine = event.get('ocrEngine', settings.DEFAULT_OCR_ENGINE)
 
                 async with AsyncSessionFactory() as db:
                     await _get_or_create_user(db, user_id)
-                    subject = await _get_or_create_subject(db, subject_id, user_id, "default")
+                    subject = await _get_or_create_subject(db, subject_id, user_id, subject_name)
 
                     pdf_path = storage_service.resolve_path(user_id, subject_id, document_id)
 

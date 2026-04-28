@@ -16,13 +16,13 @@ class RagSettings(BaseSettings):
     DEBUG: bool = False
 
     # ── Qdrant ───────────────────────────────────────────────────────────
-    QDRANT_URL: str = "http://localhost:6333"
+    QDRANT_URL: str = "http://127.0.0.1:6333"
  
     # ── LLM Settings ─────────────────────────────────────────────────────
     LLM_PROVIDER: str = "gemini"  # "gemini" | "openai"
     
     # Gemini
-    GEMINI_API_KEY: str = "AIzaSyCoPIX8X4TgMYwusUxmQt_B873kWl-bquE"
+    GEMINI_API_KEY: str = "AIzaSyD0HaIMQ1kG7vSwOzLFI21B2aY7p-adwhg"
     GEMINI_MODEL: str = "gemini-2.5-flash"
     
     # OpenAI

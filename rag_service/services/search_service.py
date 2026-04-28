@@ -27,7 +27,7 @@ class SearchService:
         self._client: QdrantClient | None = None
 
     def connect(self) -> None:
-        self._client = QdrantClient(url=settings.QDRANT_URL)
+        self._client = QdrantClient(url=settings.QDRANT_URL, timeout=60)
         logger.info("Qdrant client connected: %s", settings.QDRANT_URL)
 
     async def semantic_search(

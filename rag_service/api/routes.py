@@ -4,6 +4,7 @@ RAG Service — HTTP Routes
 POST /questions          — enqueue a question (publishes to Kafka)
 GET  /questions/{id}     — poll question status (SSE reconnect recovery)
 GET  /stream/answer      — Server-Sent Events stream for a question
+POST /questions/ask      — synchronous ask: returns full answer + sources as JSON
 GET  /health             — liveness probe
 """
 
@@ -13,12 +14,16 @@ import logging
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
+from typing import Optional
 
 from rag_service.schemas import (
     EnqueueResponse,
     QuestionRequest,
     QuestionStatusResponse,
+    SourceBlock,
 )
 from rag_service.workers.kafka_consumer import (
     QUESTION_STATE,
@@ -144,6 +149,104 @@ async def stream_answer(
         }
 
     return EventSourceResponse(_event_generator())
+
+
+# ── POST /questions/ask (synchronous — no Kafka, returns full JSON) ──────────
+
+class AskRequest(BaseModel):
+    user_id: str
+    subject_id: Optional[str] = None
+    document_id: Optional[str] = None
+    question: str
+    language: str = "auto"
+    top_k: int = 8
+
+
+class AskResponse(BaseModel):
+    question_id: str
+    answer: str
+    sources: list[SourceBlock]
+
+
+@router.post("/questions/ask", response_model=AskResponse)
+async def ask_question(req: AskRequest) -> AskResponse:
+    """
+    Synchronous RAG endpoint. Embeds the question, searches Qdrant,
+    generates a full answer via Gemini (collecting all streamed chunks),
+    and returns the complete answer + source blocks as plain JSON.
+    No Kafka, no SSE queues — works even when Kafka is down.
+    """
+    from rag_service.services.embedding_service import embedding_service
+    from rag_service.services.search_service import search_service
+    from rag_service.services.generation_service import generation_service
+
+    question_id = str(uuid.uuid4())
+
+    # 1. Embed the question
+    try:
+        query_vector = await embedding_service.encode_query(req.question)
+    except Exception as exc:
+        logger.error("Embedding failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Embedding service unavailable.")
+
+    # 2. Semantic search in Qdrant
+    try:
+        scored_points, majority_rtl = await search_service.semantic_search(
+            query_vector=query_vector,
+            user_id=req.user_id,
+            subject_id=req.subject_id,
+            document_id=req.document_id,
+            top_k=req.top_k or settings.TOP_K_RESULTS,
+        )
+    except Exception as exc:
+        logger.error("Qdrant search failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Search service unavailable.")
+
+    # 3. No results above threshold
+    if not scored_points:
+        return AskResponse(
+            question_id=question_id,
+            answer="I could not find relevant information in the documents for your question.",
+            sources=[],
+        )
+
+    # 4. Generate answer — collect all streamed chunks into one string
+    language = req.language
+    if majority_rtl:
+        language = "ar"
+
+    answer_parts: list[str] = []
+    try:
+        async def _collect():
+            async for text_piece in generation_service.stream_answer(
+                question=req.question,
+                scored_points=scored_points,
+                language=language,
+                majority_rtl=majority_rtl,
+            ):
+                answer_parts.append(text_piece)
+
+        await asyncio.wait_for(_collect(), timeout=120.0)
+    except asyncio.TimeoutError:
+        logger.error("Generation timed out for question %s", question_id)
+        raise HTTPException(status_code=504, detail="Answer generation timed out. Please try again.")
+    except Exception as exc:
+        logger.error("Generation error: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Generation error: {exc}")
+
+    full_answer = "".join(answer_parts).strip()
+
+    # 5. Build source blocks
+    sources = generation_service.build_sources(scored_points)
+
+    logger.info("Synchronous ask complete for question %s (%d chars, %d sources)",
+                question_id, len(full_answer), len(sources))
+
+    return AskResponse(
+        question_id=question_id,
+        answer=full_answer,
+        sources=sources,
+    )
 
 
 # ── GET /health ───────────────────────────────────────────────────────────────
