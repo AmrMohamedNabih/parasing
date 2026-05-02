@@ -2,6 +2,7 @@
 from app.db.models.document import Document, DocumentPage, DocumentStatus, TextBlock
 from app.db.models.subject import Subject
 from app.db.models.user import User
+from app.db.models.question_history import QuestionHistory
 
 __all__ = [
     "User",
@@ -10,4 +11,5 @@ __all__ = [
     "DocumentPage",
     "DocumentStatus",
     "TextBlock",
+    "QuestionHistory",
 ]

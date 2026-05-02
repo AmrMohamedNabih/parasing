@@ -167,6 +167,11 @@ class TextBlock(Base):
     font: Mapped[str | None] = mapped_column(String(255), nullable=True)
     font_size: Mapped[float | None] = mapped_column(Float, nullable=True)
 
+    # Embedding tracking
+    embedded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+
     # Relationships
     page: Mapped["DocumentPage"] = relationship("DocumentPage", back_populates="blocks")
 

@@ -24,7 +24,7 @@ from app.core.config import settings
 
 # Import Base + all models so Alembic can detect schema changes
 from app.db.base import Base
-from app.db.models import User, Subject, Document, DocumentPage, TextBlock  # noqa: F401
+from app.db.models import User, Subject, Document, DocumentPage, TextBlock, QuestionHistory  # noqa: F401
 
 # ============================================================
 # Alembic config object

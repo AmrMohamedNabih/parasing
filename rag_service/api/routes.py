@@ -179,6 +179,8 @@ async def ask_question(req: AskRequest) -> AskResponse:
     from rag_service.services.embedding_service import embedding_service
     from rag_service.services.search_service import search_service
     from rag_service.services.generation_service import generation_service
+    from app.db.session import AsyncSessionFactory
+    from app.db.models.question_history import QuestionHistory
 
     question_id = str(uuid.uuid4())
 
@@ -241,6 +243,24 @@ async def ask_question(req: AskRequest) -> AskResponse:
 
     logger.info("Synchronous ask complete for question %s (%d chars, %d sources)",
                 question_id, len(full_answer), len(sources))
+
+    # 6. Save to database history
+    try:
+        async with AsyncSessionFactory() as db:
+            history = QuestionHistory(
+                id=uuid.UUID(question_id),
+                user_id=uuid.UUID(req.user_id),
+                subject_id=uuid.UUID(req.subject_id) if req.subject_id else None,
+                question_text=req.question,
+                answer_text=full_answer,
+                retrieved_chunk_ids=[uuid.UUID(s.text_block_id) for s in sources]
+            )
+            db.add(history)
+            await db.commit()
+            logger.info("Saved question history for %s", question_id)
+    except Exception as exc:
+        logger.error("Failed to save question history for %s: %s", question_id, exc)
+        # We don't fail the request if history saving fails, but we log it.
 
     return AskResponse(
         question_id=question_id,

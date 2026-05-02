@@ -164,6 +164,9 @@ async def _process_question(req: QuestionRequest) -> None:
     from rag_service.services.embedding_service import embedding_service
     from rag_service.services.search_service    import search_service
     from rag_service.services.generation_service import generation_service
+    from app.db.session import AsyncSessionFactory
+    from app.db.models.question_history import QuestionHistory
+    import uuid
 
     state = QUESTION_STATE.get(req.question_id)
     if state:
@@ -212,6 +215,7 @@ async def _run_pipeline(req, embedding_service, search_service, generation_servi
     # 4. Stream generation (120 s hard timeout)
     chunk_index = 0
     sources = generation_service.build_sources(scored_points)
+    full_answer_parts = []
 
     async def _generate() -> None:
         nonlocal chunk_index
@@ -221,6 +225,7 @@ async def _run_pipeline(req, embedding_service, search_service, generation_servi
             language=req.language,
             majority_rtl=majority_rtl,
         ):
+            full_answer_parts.append(text_piece)
             is_last = False   # interim chunks
             await _publish(req.question_id, chunk_index, text_piece, is_last)
             chunk_index += 1
@@ -229,6 +234,28 @@ async def _run_pipeline(req, embedding_service, search_service, generation_servi
         await _publish(req.question_id, chunk_index, "", is_final=True, sources=sources)
 
     await asyncio.wait_for(_generate(), timeout=120.0)
+
+    # 5. Save to database history
+    try:
+        from app.db.session import AsyncSessionFactory
+        from app.db.models.question_history import QuestionHistory
+        import uuid
+
+        full_answer = "".join(full_answer_parts).strip()
+        async with AsyncSessionFactory() as db:
+            history = QuestionHistory(
+                id=uuid.UUID(req.question_id),
+                user_id=uuid.UUID(req.user_id),
+                subject_id=uuid.UUID(req.subject_id) if req.subject_id else None,
+                question_text=req.question,
+                answer_text=full_answer,
+                retrieved_chunk_ids=[uuid.UUID(s.text_block_id) for s in sources]
+            )
+            db.add(history)
+            await db.commit()
+            logger.info("Saved async question history for %s", req.question_id)
+    except Exception as exc:
+        logger.error("Failed to save async question history for %s: %s", req.question_id, exc)
 
 
 # ── Consumer loop ─────────────────────────────────────────────────────────────
