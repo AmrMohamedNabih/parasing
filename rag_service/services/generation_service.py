@@ -30,7 +30,7 @@ def _system_prompt(language: str) -> str:
         "You are a helpful assistant answering questions based ONLY on the "
         "provided context passages. If the answer cannot be found in the "
         "context, say so clearly. Do not hallucinate. "
-        "Cite passage numbers when relevant."
+        "Do NOT include a 'Relevant passages:' section or header at the end."
     )
     lang_suffix = {
         "ar":   " Respond in Arabic.",

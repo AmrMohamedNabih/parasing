@@ -24,6 +24,8 @@ from rag_service.schemas import (
     QuestionRequest,
     QuestionStatusResponse,
     SourceBlock,
+    AskRequest,
+    AskResponse,
 )
 from rag_service.workers.kafka_consumer import (
     QUESTION_STATE,
@@ -153,19 +155,6 @@ async def stream_answer(
 
 # ── POST /questions/ask (synchronous — no Kafka, returns full JSON) ──────────
 
-class AskRequest(BaseModel):
-    user_id: str
-    subject_id: Optional[str] = None
-    document_id: Optional[str] = None
-    question: str
-    language: str = "auto"
-    top_k: int = 8
-
-
-class AskResponse(BaseModel):
-    question_id: str
-    answer: str
-    sources: list[SourceBlock]
 
 
 @router.post("/questions/ask", response_model=AskResponse)

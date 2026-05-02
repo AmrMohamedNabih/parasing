@@ -42,6 +42,14 @@ class SourceBlock(BaseModel):
     text_snippet: str               # first 120 chars
     score: float
 
+    model_config = {
+        "populate_by_name": True,
+        "alias_generator": lambda s: "".join(
+            word.capitalize() if i > 0 else word 
+            for i, word in enumerate(s.split("_"))
+        )
+    }
+
 
 class QuestionChunk(BaseModel):
     """One streaming chunk published to Kafka topic: question-responses"""
@@ -51,6 +59,14 @@ class QuestionChunk(BaseModel):
     is_final: bool
     sources: list[SourceBlock] = []
 
+    model_config = {
+        "populate_by_name": True,
+        "alias_generator": lambda s: "".join(
+            word.capitalize() if i > 0 else word 
+            for i, word in enumerate(s.split("_"))
+        )
+    }
+
 
 # ── HTTP responses ────────────────────────────────────────────────────────────
 
@@ -58,9 +74,56 @@ class EnqueueResponse(BaseModel):
     question_id: str
     status: str = "queued"
 
+    model_config = {
+        "populate_by_name": True,
+        "alias_generator": lambda s: "".join(
+            word.capitalize() if i > 0 else word 
+            for i, word in enumerate(s.split("_"))
+        )
+    }
+
 
 class QuestionStatusResponse(BaseModel):
     question_id: str
     status: str             # "queued" | "processing" | "done" | "error"
     chunk_count: int
     is_final: bool
+
+    model_config = {
+        "populate_by_name": True,
+        "alias_generator": lambda s: "".join(
+            word.capitalize() if i > 0 else word 
+            for i, word in enumerate(s.split("_"))
+        )
+    }
+
+
+class AskRequest(BaseModel):
+    user_id: str
+    subject_id: Optional[str] = None
+    document_id: Optional[str] = None
+    question: str
+    language: str = "auto"
+    top_k: int = 8
+
+    model_config = {
+        "populate_by_name": True,
+        "alias_generator": lambda s: "".join(
+            word.capitalize() if i > 0 else word 
+            for i, word in enumerate(s.split("_"))
+        )
+    }
+
+
+class AskResponse(BaseModel):
+    question_id: str
+    answer: str
+    sources: list[SourceBlock]
+
+    model_config = {
+        "populate_by_name": True,
+        "alias_generator": lambda s: "".join(
+            word.capitalize() if i > 0 else word 
+            for i, word in enumerate(s.split("_"))
+        )
+    }
