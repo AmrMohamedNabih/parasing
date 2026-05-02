@@ -125,6 +125,7 @@ async def consume_document_events():
         settings.KAFKA_DELETE_TOPIC,
         'document-uploads',
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
+        group_id='parsing-worker',
         value_deserializer=lambda v: json.loads(v.decode('utf-8'))
     )
 
