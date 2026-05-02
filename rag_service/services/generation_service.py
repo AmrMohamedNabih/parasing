@@ -12,6 +12,7 @@ from typing import AsyncGenerator
 
 import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
+from mistralai.client import Mistral
 from openai import OpenAI
 
 from rag_service.config import settings
@@ -58,6 +59,7 @@ class GenerationService:
     def __init__(self) -> None:
         self._configured = False
         self._openai_client = None
+        self._mistral_client = None
 
     def configure(self) -> None:
         if settings.LLM_PROVIDER == "gemini":
@@ -74,6 +76,13 @@ class GenerationService:
                 logger.info("OpenAI configured — model: %s", settings.OPENAI_MODEL)
             else:
                 logger.warning("OPENAI_API_KEY is empty.")
+        elif settings.LLM_PROVIDER == "mistral":
+            if settings.MISTRAL_API_KEY:
+                self._mistral_client = Mistral(api_key=settings.MISTRAL_API_KEY)
+                self._configured = True
+                logger.info("Mistral configured — model: %s", settings.MISTRAL_MODEL)
+            else:
+                logger.warning("MISTRAL_API_KEY is empty.")
 
     def build_sources(self, scored_points: list) -> list[SourceBlock]:
         return [
@@ -106,6 +115,8 @@ class GenerationService:
         def _run_stream() -> None:
             if settings.LLM_PROVIDER == "gemini":
                 self._run_gemini_stream(system_msg + "\n\n" + user_msg, queue, loop)
+            elif settings.LLM_PROVIDER == "mistral":
+                self._run_mistral_stream(system_msg, user_msg, queue, loop)
             else:
                 self._run_openai_stream(system_msg, user_msg, queue, loop)
 
@@ -133,6 +144,28 @@ class GenerationService:
             asyncio.run_coroutine_threadsafe(queue.put("\n[Gemini Quota Exceeded. Please try again later.]"), loop)
         except Exception as exc:
             logger.error("Gemini error: %s", exc)
+            asyncio.run_coroutine_threadsafe(queue.put(f"\n[Generation error: {exc}]"), loop)
+        finally:
+            asyncio.run_coroutine_threadsafe(queue.put(None), loop)
+
+    def _run_mistral_stream(self, system_msg, user_msg, queue, loop):
+        try:
+            response = self._mistral_client.chat.stream(
+                model=settings.MISTRAL_MODEL,
+                messages=[
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg},
+                ],
+                temperature=0.2,
+                max_tokens=1024,
+            )
+            for chunk in response:
+                if chunk.data.choices and chunk.data.choices[0].delta.content:
+                    text = chunk.data.choices[0].delta.content
+                    if text:
+                        asyncio.run_coroutine_threadsafe(queue.put(text), loop)
+        except Exception as exc:
+            logger.error("Mistral error: %s", exc)
             asyncio.run_coroutine_threadsafe(queue.put(f"\n[Generation error: {exc}]"), loop)
         finally:
             asyncio.run_coroutine_threadsafe(queue.put(None), loop)

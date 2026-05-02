@@ -19,12 +19,16 @@ class RagSettings(BaseSettings):
     QDRANT_URL: str = "http://127.0.0.1:6333"
  
     # ── LLM Settings ─────────────────────────────────────────────────────
-    LLM_PROVIDER: str = "gemini"  # "gemini" | "openai"
+    LLM_PROVIDER: str = "mistral"  # "gemini" | "openai" | "mistral"
     
     # Gemini
     GEMINI_API_KEY: str = "AIzaSyD0HaIMQ1kG7vSwOzLFI21B2aY7p-adwhg"
     GEMINI_MODEL: str = "gemini-2.5-flash"
     
+    # Mistral
+    MISTRAL_API_KEY: str = ""
+    MISTRAL_MODEL: str = "mistral-small-latest"
+
     # OpenAI
     OPENAI_API_KEY: str = "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"
     OPENAI_MODEL: str = "gpt-4.1-mini"

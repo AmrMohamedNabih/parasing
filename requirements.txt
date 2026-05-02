@@ -40,6 +40,7 @@ aiokafka>=0.10.0
 # Phase 2 — RAG Query Service
 # ============================================================
 google-generativeai>=0.7
+mistralai>=1.0.0
 qdrant-client>=1.9
 sentence-transformers>=3.0
 sse-starlette>=1.8
