@@ -85,5 +85,26 @@ class SearchService:
 
         return results, majority_rtl
 
+    async def delete_document(self, document_id: str) -> None:
+        """
+        Deletes all vectors associated with a specific document_id from Qdrant.
+        """
+        logger.info("Deleting vectors for document_id: %s", document_id)
+        try:
+            self._client.delete(
+                collection_name="rag_text_blocks",
+                points_selector=Filter(
+                    must=[
+                        FieldCondition(
+                            key="document_id",
+                            match=MatchValue(value=document_id)
+                        )
+                    ]
+                )
+            )
+            logger.info("Successfully deleted vectors for document %s", document_id)
+        except Exception as e:
+            logger.error("Failed to delete vectors for document %s: %s", document_id, e)
+
 
 search_service = SearchService()

@@ -4,7 +4,7 @@ import logging
 import uuid
 
 from aiokafka import AIOKafkaConsumer
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
 from app.core.config import settings
 from app.db.models.document import Document, DocumentStatus
@@ -13,6 +13,7 @@ from app.db.models.user import User
 from app.db.session import AsyncSessionFactory
 from app.services.storage_service import storage_service
 from app.workers.parsing_worker import run_parsing_job
+from rag_service.services.search_service import search_service
 
 logger = logging.getLogger(__name__)
 
@@ -84,11 +85,44 @@ async def _get_or_create_subject(
     return subject
 
 
+async def _handle_document_deletion(event: dict):
+    """
+    Cleans up all traces of a document from PostgreSQL, Qdrant, and local storage.
+    """
+    try:
+        document_id = uuid.UUID(event['documentId'])
+        subject_id = uuid.UUID(event['subjectId'])
+        user_id = uuid.UUID(event['userId'])
+
+        logger.info(f"Starting global cleanup for document {document_id}")
+
+        # 1. Delete from PostgreSQL (Cascades to text_blocks and pages)
+        async with AsyncSessionFactory() as db:
+            await db.execute(delete(Document).where(Document.id == document_id))
+            await db.commit()
+            logger.info(f"Deleted document {document_id} from PostgreSQL")
+
+        # 2. Delete from Local Storage (PDF file)
+        await storage_service.delete(user_id, subject_id, document_id)
+        logger.info(f"Deleted document {document_id} from local storage")
+
+        # 3. Delete from Qdrant Vector DB
+        # Ensure search_service is connected (it's a singleton)
+        search_service.connect()
+        await search_service.delete_document(str(document_id))
+
+        logger.info(f"Global cleanup complete for document {document_id}")
+
+    except Exception as e:
+        logger.error(f"Failed to handle document deletion for {event}: {e}", exc_info=True)
+
+
 async def consume_document_events():
     """Background task to consume Kafka events."""
     logger.info(f"Starting Kafka consumer for topic 'document-uploads' on {settings.KAFKA_BOOTSTRAP_SERVERS}")
 
     consumer = AIOKafkaConsumer(
+        settings.KAFKA_DELETE_TOPIC,
         'document-uploads',
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
         value_deserializer=lambda v: json.loads(v.decode('utf-8'))
@@ -112,6 +146,10 @@ async def consume_document_events():
             logger.info(f"Consumed event: {event}")
 
             try:
+                if msg.topic == settings.KAFKA_DELETE_TOPIC:
+                    await _handle_document_deletion(event)
+                    continue
+
                 document_id = uuid.UUID(event['documentId'])
                 subject_id = uuid.UUID(event['subjectId'])
                 user_id = uuid.UUID(event['userId'])

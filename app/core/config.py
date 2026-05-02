@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     KAFKA_QUESTION_TOPIC: str = "question-requests"
     KAFKA_RESPONSE_TOPIC: str = "question-responses"
     KAFKA_ERROR_TOPIC: str = "question-errors"
+    KAFKA_DELETE_TOPIC: str = "document-deletions"
 
     # Search
     TOP_K_RESULTS: int = 8
