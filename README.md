@@ -5,7 +5,7 @@ A production-grade PDF extraction API that receives binary PDF documents, proces
 ## 🚀 Key Features
 
 *   **FastAPI Backend**: Modern, high-performance, and asynchronous.
-*   **7-Stage Intelligent Pipeline**: Combines direct extraction, selective OCR, and structural analysis.
+*   **Intelligent Pipeline**: Combines 7-stage direct extraction, selective OCR, structural analysis, followed by semantic chunking (NLTK sentence-aware) and neural merging (MiniLM).
 *   **User & Subject Isolation**: Organizes extractions by `user_id` and `subject_id`.
 *   **PostgreSQL Persistence**: Stores extraction results in structured tables (`documents`, `pages`, `text_blocks`).
 *   **Asynchronous Processing**: Background tasks handle heavy extraction work without blocking.
@@ -39,6 +39,7 @@ parsing/
 *   Docker & Docker Compose
 *   Tesseract OCR (for the extraction engine)
 *   Poppler (for PDF processing)
+*   NLTK & tiktoken (for semantic chunking and tokenization)
 
 ### 2. Environment Setup
 

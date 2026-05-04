@@ -26,6 +26,15 @@ class TextDirection(Enum):
 
 
 @dataclass
+class ChunkingConfig:
+    """Configuration for semantic chunking and merging"""
+    similarity_threshold: float = 0.80
+    min_tokens: int = 30
+    max_tokens: int = 400
+    adjacency_window: int = 2
+
+
+@dataclass
 class TextBlock:
     """Represents a single text block from any extraction stage"""
     block_id: str
@@ -81,6 +90,19 @@ class ImageBlock:
     ocr_text: str = ""
     confidence: float = 0.0
     format: str = "png"
+
+
+@dataclass
+class SemanticChunk:
+    """Represents a merged/split semantic chunk of text"""
+    chunk_id: str
+    text: str
+    source_block_ids: List[str]
+    bbox: List[float]  # [x0, y0, x1, y1]
+    token_count: int = 0
+    confidence: float = 0.0
+    page_number: int = 0
+    direction: TextDirection = TextDirection.LTR
 
 
 @dataclass

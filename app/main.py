@@ -56,6 +56,12 @@ async def lifespan(app: FastAPI):
     # Start Kafka consumer background task
     consumer_task = asyncio.create_task(consume_document_events())
 
+    # Load neural chunk merger model
+    from chunk_merger import neural_chunk_merger
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, neural_chunk_merger.load)
+    logger.info("Neural Chunk Merger loaded.")
+
     yield  # ← server is live here
 
     logger.info("RAG Parsing Server shutting down")

@@ -147,6 +147,7 @@ class TextBlock(Base):
     # Pipeline metadata
     block_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     source_stage: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    source_block_ids: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
 
     # Content
     text: Mapped[str] = mapped_column(Text, nullable=False)

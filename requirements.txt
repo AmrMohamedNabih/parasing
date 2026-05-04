@@ -9,6 +9,8 @@ numpy>=1.24.0
 PyMuPDF>=1.23.0
 pdfplumber>=0.10.0
 easyocr
+tiktoken>=0.7.0
+nltk>=3.8.0
 
 # ============================================================
 # FastAPI Server

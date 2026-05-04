@@ -77,11 +77,15 @@ class ParsingService:
                 ocr_engine=doc.ocr_engine,
             )
 
+            # 3.5 Semantic chunking and merging
+            final_chunks_by_page = await self._chunk_and_merge(extraction_result)
+
             # 4. Persist all pages and blocks
             await self._persist_results(
                 db=db,
                 doc=doc,
                 result=extraction_result,
+                final_chunks_by_page=final_chunks_by_page
             )
 
             # 5. Mark as DONE
@@ -130,11 +134,35 @@ class ParsingService:
 
         return await loop.run_in_executor(_executor, _extract)
 
+    async def _chunk_and_merge(self, result: DocumentResult) -> dict:
+        """
+        Run semantic chunking and neural merging in a thread pool.
+        """
+        loop = asyncio.get_running_loop()
+
+        def _do_chunk() -> dict:
+            from semantic_chunker import SemanticChunker
+            from chunk_merger import neural_chunk_merger
+            from pipeline_models import ChunkingConfig
+            
+            config = ChunkingConfig()
+            chunker = SemanticChunker(config)
+            
+            final_chunks = {}
+            for page in result.pages:
+                semantic_chunks = chunker.chunk_page(page.page_number, page.blocks)
+                merged_chunks = neural_chunk_merger.merge_chunks(semantic_chunks, config)
+                final_chunks[page.page_number] = merged_chunks
+            return final_chunks
+
+        return await loop.run_in_executor(_executor, _do_chunk)
+
     async def _persist_results(
         self,
         db: AsyncSession,
         doc: Document,
         result: DocumentResult,
+        final_chunks_by_page: dict,
     ) -> None:
         """
         Bulk-insert all pages and their text blocks in a single transaction.
@@ -156,25 +184,27 @@ class ParsingService:
             # Flush to get page.id for FK references
             await db.flush()
 
-            # Create all text blocks for this page
+            # Create all text blocks for this page from final merged chunks
             block_records = []
-            for block in page_data.blocks:
+            final_chunks = final_chunks_by_page.get(page_data.page_number, [])
+            for chunk in final_chunks:
                 tb = TextBlock(
                     id=uuid.uuid4(),
                     page_id=page.id,
                     document_id=doc.id,
                     user_id=doc.user_id,
-                    block_id=block.block_id,
-                    text=block.text,
-                    direction=block.direction.value,
-                    rtl_ratio=round(block.rtl_ratio, 4),
-                    confidence=round(block.confidence, 4),
-                    source_stage=block.source_stage.value,
-                    bbox=block.bbox,
-                    column_num=block.column,
-                    font=block.font,
-                    font_size=block.size,
-                    word_count=block.word_count,
+                    block_id=chunk.chunk_id,
+                    text=chunk.text,
+                    direction=chunk.direction.value,
+                    rtl_ratio=0.0,
+                    confidence=round(chunk.confidence, 4),
+                    source_stage="semantic_merged",
+                    bbox=chunk.bbox,
+                    column_num=1,
+                    font=None,
+                    font_size=None,
+                    word_count=chunk.token_count, # Storing token count instead of word count
+                    source_block_ids=chunk.source_block_ids,
                 )
                 block_records.append(tb)
 
