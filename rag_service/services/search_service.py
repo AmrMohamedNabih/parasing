@@ -36,7 +36,7 @@ class SearchService:
         user_id: str,
         subject_id: Optional[str] = None,
         document_id: Optional[str] = None,
-        top_k: int = 8,
+        top_k: int = 10,
     ) -> tuple[list[ScoredPoint], bool]:
         """
         Returns (scored_points, majority_rtl).

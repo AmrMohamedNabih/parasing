@@ -40,11 +40,11 @@ DATABASE_URL: str = os.getenv(
 )
 QDRANT_URL: str = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
 COLLECTION_NAME = "rag_text_blocks"
-VECTOR_DIM = 384
+VECTOR_DIM = 1024
 POLL_INTERVAL = 30          # seconds between polls
 FETCH_LIMIT = 64            # rows per DB fetch
 ENCODE_BATCH_SIZE = 32      # SentenceTransformer internal batch size
-MODEL_NAME = "intfloat/multilingual-e5-small"
+MODEL_NAME = "intfloat/multilingual-e5-large"
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 

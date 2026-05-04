@@ -14,7 +14,7 @@ from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
-_MODEL_NAME = "intfloat/multilingual-e5-small"
+_MODEL_NAME = "intfloat/multilingual-e5-large"
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="embed_svc")
 
 
