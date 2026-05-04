@@ -27,6 +27,7 @@ from rag_service.schemas import (
     AskRequest,
     AskResponse,
 )
+from rag_service.services.document_service import document_service
 from rag_service.workers.kafka_consumer import (
     QUESTION_STATE,
     STREAM_META,
@@ -173,6 +174,10 @@ async def ask_question(req: AskRequest) -> AskResponse:
 
     question_id = str(uuid.uuid4())
 
+    # 1. Log request
+    logger.info("Incoming ask request: deep_analysis=%s, document_ids=%s, question=%s", 
+                req.deep_analysis, req.document_ids, req.question[:50])
+
     # 1. Embed the question
     try:
         query_vector = await embedding_service.encode_query(req.question)
@@ -180,17 +185,22 @@ async def ask_question(req: AskRequest) -> AskResponse:
         logger.error("Embedding failed: %s", exc)
         raise HTTPException(status_code=503, detail="Embedding service unavailable.")
 
-    # 2. Semantic search in Qdrant
+    # 2. Context Retrieval
     try:
-        scored_points, majority_rtl = await search_service.semantic_search(
-            query_vector=query_vector,
-            user_id=req.user_id,
-            subject_id=req.subject_id,
-            document_id=req.document_id,
-            top_k=req.top_k or settings.TOP_K_RESULTS,
-        )
+        if req.deep_analysis and req.document_ids:
+            logger.info("Deep analysis requested for documents: %s. Fetching full text from DB.", req.document_ids)
+            scored_points = await document_service.fetch_full_text(req.document_ids)
+            majority_rtl = sum(1 for p in scored_points if p.payload.get("direction") == "rtl") > len(scored_points) / 2 if scored_points else False
+        else:
+            scored_points, majority_rtl = await search_service.semantic_search(
+                query_vector=query_vector,
+                user_id=req.user_id,
+                subject_id=req.subject_id,
+                document_ids=req.document_ids,
+                top_k=req.top_k or settings.TOP_K_RESULTS,
+            )
     except Exception as exc:
-        logger.error("Qdrant search failed: %s", exc)
+        logger.error("Context retrieval failed: %s", exc)
         raise HTTPException(status_code=503, detail="Search service unavailable.")
 
     # 3. No results above threshold
@@ -214,6 +224,7 @@ async def ask_question(req: AskRequest) -> AskResponse:
                 scored_points=scored_points,
                 language=language,
                 majority_rtl=majority_rtl,
+                deep_analysis=req.deep_analysis,
             ):
                 answer_parts.append(text_piece)
 

@@ -17,10 +17,11 @@ class QuestionRequest(BaseModel):
     question_id: str = Field(default_factory=lambda: str(_uuid.uuid4()))
     user_id: str
     subject_id: Optional[str] = None
-    document_id: Optional[str] = None
+    document_ids: Optional[list[str]] = None
+    deep_analysis: bool = False
     question: str
     language: str = "auto"          # "ar" | "en" | "auto"
-    top_k: int = 8
+    top_k: int = 15
     stream_via: str = "http"        # "kafka" | "http" | "both"
 
     model_config = {
@@ -101,10 +102,11 @@ class QuestionStatusResponse(BaseModel):
 class AskRequest(BaseModel):
     user_id: str
     subject_id: Optional[str] = None
-    document_id: Optional[str] = None
+    document_ids: Optional[list[str]] = None
+    deep_analysis: bool = False
     question: str
     language: str = "auto"
-    top_k: int = 8
+    top_k: int = 15
 
     model_config = {
         "populate_by_name": True,

@@ -35,7 +35,7 @@ class SearchService:
         query_vector: list[float],
         user_id: str,
         subject_id: Optional[str] = None,
-        document_id: Optional[str] = None,
+        document_ids: Optional[list[str]] = None,
         top_k: int = 10,
     ) -> tuple[list[ScoredPoint], bool]:
         """
@@ -50,8 +50,9 @@ class SearchService:
         ]
         if subject_id:
             must.append(FieldCondition(key="subject_id", match=MatchValue(value=subject_id)))
-        if document_id:
-            must.append(FieldCondition(key="document_id", match=MatchValue(value=document_id)))
+        if document_ids:
+            from qdrant_client.models import MatchAny
+            must.append(FieldCondition(key="document_id", match=MatchAny(any=document_ids)))
 
         if not hasattr(self._client, "search"):
             logger.error("QdrantClient missing 'search' method. Available: %s", dir(self._client))
@@ -83,7 +84,33 @@ class SearchService:
         )
         majority_rtl = rtl_count > len(results) / 2 if results else False
 
+        # ── Resolve filenames from PostgreSQL ──
+        await self._resolve_filenames(results)
+
         return results, majority_rtl
+
+    async def _resolve_filenames(self, results: list[ScoredPoint]) -> None:
+        doc_ids = list(set(p.payload.get("document_id") for p in results if p.payload.get("document_id")))
+        if not doc_ids:
+            return
+            
+        from sqlalchemy import select
+        from app.db.session import AsyncSessionFactory
+        from app.db.models.document import Document
+        import uuid
+        
+        try:
+            async with AsyncSessionFactory() as db:
+                stmt = select(Document.id, Document.filename).where(Document.id.in_([uuid.UUID(did) for did in doc_ids]))
+                res = await db.execute(stmt)
+                mapping = {str(row[0]): row[1] for row in res.all()}
+                
+                for p in results:
+                    did = p.payload.get("document_id")
+                    if did in mapping:
+                        p.payload["filename"] = mapping[did]
+        except Exception as e:
+            logger.error("Failed to resolve filenames: %s", e)
 
     async def delete_document(self, document_id: str) -> None:
         """

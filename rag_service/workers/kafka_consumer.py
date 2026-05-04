@@ -164,6 +164,7 @@ async def _process_question(req: QuestionRequest) -> None:
     from rag_service.services.embedding_service import embedding_service
     from rag_service.services.search_service    import search_service
     from rag_service.services.generation_service import generation_service
+    from rag_service.services.document_service import document_service
     from app.db.session import AsyncSessionFactory
     from app.db.models.question_history import QuestionHistory
     import uuid
@@ -189,18 +190,23 @@ async def _run_pipeline(req, embedding_service, search_service, generation_servi
     # 1. Embed query
     query_vector = await embedding_service.encode_query(req.question)
 
-    # 2. Semantic search
+    # 2. Context Retrieval
     try:
-        scored_points, majority_rtl = await search_service.semantic_search(
-            query_vector=query_vector,
-            user_id=req.user_id,
-            subject_id=req.subject_id,
-            document_id=req.document_id,
-            top_k=req.top_k or settings.TOP_K_RESULTS,
-        )
+        if req.deep_analysis and req.document_ids:
+            logger.info("Deep analysis requested for %s. Fetching full text from DB.", req.question_id)
+            scored_points = await document_service.fetch_full_text(req.document_ids)
+            majority_rtl = sum(1 for p in scored_points if p.payload.get("direction") == "rtl") > len(scored_points) / 2 if scored_points else False
+        else:
+            scored_points, majority_rtl = await search_service.semantic_search(
+                query_vector=query_vector,
+                user_id=req.user_id,
+                subject_id=req.subject_id,
+                document_ids=req.document_ids,
+                top_k=req.top_k or settings.TOP_K_RESULTS,
+            )
     except Exception as exc:
-        logger.error("Qdrant unavailable for %s: %s", req.question_id, exc)
-        await _publish_error(req.question_id, "Search service unavailable.")
+        logger.error("Context retrieval failed for %s: %s", req.question_id, exc)
+        await _publish_error(req.question_id, "Context retrieval service unavailable.")
         return
 
     # 3. No results above threshold
@@ -224,6 +230,7 @@ async def _run_pipeline(req, embedding_service, search_service, generation_servi
             scored_points=scored_points,
             language=req.language,
             majority_rtl=majority_rtl,
+            deep_analysis=req.deep_analysis,
         ):
             full_answer_parts.append(text_piece)
             is_last = False   # interim chunks
