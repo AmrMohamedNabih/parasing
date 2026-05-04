@@ -231,6 +231,7 @@ async def _run_pipeline(req, embedding_service, search_service, generation_servi
             language=req.language,
             majority_rtl=majority_rtl,
             deep_analysis=req.deep_analysis,
+            task_plan=req.task_plan
         ):
             full_answer_parts.append(text_piece)
             is_last = False   # interim chunks

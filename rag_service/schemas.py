@@ -22,6 +22,7 @@ class QuestionRequest(BaseModel):
     question: str
     language: str = "auto"          # "ar" | "en" | "auto"
     top_k: int = 15
+    task_plan: bool = False
     stream_via: str = "http"        # "kafka" | "http" | "both"
 
     model_config = {
@@ -107,6 +108,7 @@ class AskRequest(BaseModel):
     question: str
     language: str = "auto"
     top_k: int = 15
+    task_plan: bool = False
 
     model_config = {
         "populate_by_name": True,

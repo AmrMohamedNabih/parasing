@@ -25,7 +25,7 @@ _GENERATION_CONFIG_GEMINI = genai.types.GenerationConfig(
     max_output_tokens=1024,
 )
 
-def _system_prompt(language: str, deep_analysis: bool = False) -> str:
+def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool = False) -> str:
     if deep_analysis:
         base = (
             "You are a highly analytical research assistant. Your task is to provide "
@@ -33,6 +33,23 @@ def _system_prompt(language: str, deep_analysis: bool = False) -> str:
             "Focus on key findings, methodologies, conclusions, and any significant takeaways. "
             "Structure your response logically with headers and bullet points where appropriate. "
             "Base your answer ONLY on the provided context."
+        )
+    elif task_plan:
+        base = (
+            "You are an expert Study and Project Planner. Your task is to analyze the "
+            "provided context and create a detailed execution plan (tasks). "
+            "You MUST provide two parts in your response:\n"
+            "1. A natural language summary of the plan for the user.\n"
+            "2. A structured JSON list of tasks wrapped inside <task_plan> tags.\n\n"
+            "Example format for the JSON part:\n"
+            "<task_plan>\n"
+            "[\n"
+            "  {\"title\": \"Read Chapter 1\", \"description\": \"Focus on pages 1-10\", \"dueDate\": \"2024-05-10T10:00:00\", \"priority\": \"HIGH\"},\n"
+            "  {\"title\": \"Draft Summary\", \"description\": \"Summarize key findings\", \"dueDate\": \"2024-05-11T15:00:00\", \"priority\": \"MEDIUM\"}\n"
+            "]\n"
+            "</task_plan>\n\n"
+            "Available Priorities: HIGH, MEDIUM, LOW.\n"
+            "Use ISO 8601 format for dueDate. If no specific date is mentioned, spread them out starting from tomorrow."
         )
     else:
         base = (
@@ -116,11 +133,12 @@ class GenerationService:
         language: str,
         majority_rtl: bool,
         deep_analysis: bool = False,
+        task_plan: bool = False,
     ) -> AsyncGenerator[str, None]:
         if majority_rtl:
             language = "ar"
 
-        system_msg = _system_prompt(language, deep_analysis)
+        system_msg = _system_prompt(language, deep_analysis, task_plan)
         user_msg = _user_prompt(question, scored_points, deep_analysis)
         
         if deep_analysis:

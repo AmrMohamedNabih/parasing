@@ -219,14 +219,15 @@ async def ask_question(req: AskRequest) -> AskResponse:
     answer_parts: list[str] = []
     try:
         async def _collect():
-            async for text_piece in generation_service.stream_answer(
-                question=req.question,
-                scored_points=scored_points,
-                language=language,
-                majority_rtl=majority_rtl,
+            async for chunk in generation_service.stream_answer(
+                req.question,
+                scored_points,
+                req.language,
+                majority_rtl,
                 deep_analysis=req.deep_analysis,
+                task_plan=req.task_plan
             ):
-                answer_parts.append(text_piece)
+                answer_parts.append(chunk)
 
         await asyncio.wait_for(_collect(), timeout=120.0)
     except asyncio.TimeoutError:
