@@ -21,7 +21,7 @@ class QuestionRequest(BaseModel):
     deep_analysis: bool = False
     question: str
     language: str = "auto"          # "ar" | "en" | "auto"
-    top_k: int = 15
+    top_k: Optional[int] = None
     task_plan: bool = False
     global_search: bool = False
     stream_via: str = "http"        # "kafka" | "http" | "both"
@@ -108,7 +108,7 @@ class AskRequest(BaseModel):
     deep_analysis: bool = False
     question: str
     language: str = "auto"
-    top_k: int = 15
+    top_k: Optional[int] = None
     task_plan: bool = False
     global_search: bool = False
     summary: Optional[str] = None

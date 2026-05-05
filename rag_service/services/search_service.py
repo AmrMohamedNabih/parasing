@@ -36,7 +36,7 @@ class SearchService:
         user_id: str,
         subject_id: Optional[str] = None,
         document_ids: Optional[list[str]] = None,
-        top_k: int = 10,
+        top_k: Optional[int] = None,
     ) -> tuple[list[ScoredPoint], bool]:
         """
         Returns (scored_points, majority_rtl).
@@ -45,6 +45,11 @@ class SearchService:
         direction='rtl' in their Qdrant payload. Used by generation_service
         to auto-switch the system prompt to Arabic.
         """
+        # FORCED FOR DEBUGGING: ignoring settings and parameters
+        top_k = 30
+        
+        logger.info("SEARCH PARAMS (FORCED): top_k=%d, threshold=%f", top_k, settings.SIMILARITY_THRESHOLD)
+
         must: list = [
             FieldCondition(key="user_id", match=MatchValue(value=user_id))
         ]
@@ -77,6 +82,8 @@ class SearchService:
                 score_threshold=settings.SIMILARITY_THRESHOLD,
                 with_payload=True,
             )
+
+        logger.info("QDRANT RETURNED %d points", len(results))
 
         # ── Arabic majority detection — from payload, never from question ──
         rtl_count = sum(

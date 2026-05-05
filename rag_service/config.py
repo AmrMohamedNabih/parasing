@@ -40,7 +40,7 @@ class RagSettings(BaseSettings):
     KAFKA_DELETE_TOPIC: str = "document-deletions"
 
     # ── Search ───────────────────────────────────────────────────────────
-    TOP_K_RESULTS: int = 10
+    TOP_K_RESULTS: int = 30
     SIMILARITY_THRESHOLD: float = 0.55   # tuned for e5-small cosine scores
 
     model_config = {
