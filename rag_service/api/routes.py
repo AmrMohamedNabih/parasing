@@ -192,12 +192,17 @@ async def ask_question(req: AskRequest) -> AskResponse:
 
     try:
         if is_rag_required:
-            if req.deep_analysis and req.document_ids:
-                logger.info("Deep analysis requested for documents: %s. Fetching full text from DB.", req.document_ids)
-                scored_points = await document_service.fetch_full_text(req.document_ids)
+            if req.global_search or req.deep_analysis:
+                # Use full text for global search or specific deep analysis
+                logger.info("Fetching full text from DB. global_search=%s, deep_analysis=%s", req.global_search, req.deep_analysis)
+                scored_points = await document_service.fetch_full_text(
+                    document_ids=req.document_ids, 
+                    subject_id=req.subject_id if req.global_search else None
+                )
                 majority_rtl = sum(1 for p in scored_points if p.payload.get("direction") == "rtl") > len(scored_points) / 2 if scored_points else False
             else:
-                logger.info("Performing semantic search (is_global_search=%s)", req.global_search)
+                # Normal semantic search (specific documents only)
+                logger.info("Performing semantic search for specific documents.")
                 scored_points, majority_rtl = await search_service.semantic_search(
                     query_vector=query_vector,
                     user_id=req.user_id,
