@@ -25,7 +25,7 @@ _GENERATION_CONFIG_GEMINI = genai.types.GenerationConfig(
     max_output_tokens=1024,
 )
 
-def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool = False) -> str:
+def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool = False, has_context: bool = True) -> str:
     if deep_analysis:
         base = (
             "You are a highly analytical research assistant. Your task is to provide "
@@ -52,12 +52,19 @@ def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool =
             "Use ISO 8601 format for dueDate. If no specific date is mentioned, spread them out starting from tomorrow."
         )
     else:
-        base = (
-            "You are a helpful assistant answering questions based ONLY on the "
-            "provided context passages. If the answer cannot be found in the "
-            "context, say so clearly. Do not hallucinate. "
-            "Do NOT include a 'Relevant passages:' section or header at the end."
-        )
+        if has_context:
+            base = (
+                "You are a helpful assistant answering questions based ONLY on the "
+                "provided context passages. If the answer cannot be found in the "
+                "context, say so clearly. Do not hallucinate. "
+                "Do NOT include a 'Relevant passages:' section or header at the end."
+            )
+        else:
+            base = (
+                "You are a helpful research assistant. You are currently in a general chat mode "
+                "without specific document context. Answer the user's question to the best of your "
+                "knowledge using the conversation history if available."
+            )
     
     summary_instruction = (
         "\n\nAt the end of your response, you MUST provide a single bullet point "
@@ -147,17 +154,21 @@ class GenerationService:
         if majority_rtl:
             language = "ar"
 
-        system_msg = _system_prompt(language, deep_analysis, task_plan)
+        has_context = len(scored_points) > 0
+        system_msg = _system_prompt(language, deep_analysis, task_plan, has_context)
         user_msg = _user_prompt(question, scored_points, deep_analysis, summary)
         
-        if deep_analysis:
-            logger.info("--- DEEP ANALYSIS PROMPT START ---")
-            logger.info("System Prompt: %s", system_msg)
-            logger.info("User Prompt: %s", user_msg)
-            logger.info("--- DEEP ANALYSIS PROMPT END ---")
-        else:
-            logger.debug("System Prompt: %s", system_msg)
-            logger.debug("User Prompt: %s", user_msg)
+        # ── INTERACTION LOGGING ──────────────────────────────────────────────
+        interaction_log = (
+            "\n" + "="*80 + "\n"
+            "PROMPT SENT TO LLM\n"
+            "-"*80 + "\n"
+            f"SYSTEM: {system_msg}\n\n"
+            f"USER: {user_msg}\n"
+            "="*80 + "\n"
+        )
+        logger.info(interaction_log)
+        # ────────────────────────────────────────────────────────────────────
 
         max_tokens = 2048 if deep_analysis else 1024
 
@@ -175,11 +186,16 @@ class GenerationService:
         thread = threading.Thread(target=_run_stream, daemon=True)
         thread.start()
 
+        full_answer = []
         while True:
             chunk = await queue.get()
             if chunk is None:
                 break
+            full_answer.append(chunk)
             yield chunk
+
+        # Log final answer
+        logger.info("\n" + "-"*80 + "\nAI ANSWER:\n" + "".join(full_answer) + "\n" + "="*80 + "\n")
 
     async def generate_updated_summary(self, history_text: str) -> str:
         """

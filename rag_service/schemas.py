@@ -23,6 +23,7 @@ class QuestionRequest(BaseModel):
     language: str = "auto"          # "ar" | "en" | "auto"
     top_k: int = 15
     task_plan: bool = False
+    global_search: bool = False
     stream_via: str = "http"        # "kafka" | "http" | "both"
 
     model_config = {
@@ -109,6 +110,7 @@ class AskRequest(BaseModel):
     language: str = "auto"
     top_k: int = 15
     task_plan: bool = False
+    global_search: bool = False
     summary: Optional[str] = None
 
     model_config = {

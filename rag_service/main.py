@@ -33,6 +33,10 @@ logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("rag_service.log", encoding="utf-8")
+    ]
 )
 logging.getLogger("aiokafka").setLevel(logging.INFO)
 logging.getLogger("watchfiles").setLevel(logging.WARNING)
