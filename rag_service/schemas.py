@@ -109,6 +109,7 @@ class AskRequest(BaseModel):
     language: str = "auto"
     top_k: int = 15
     task_plan: bool = False
+    summary: Optional[str] = None
 
     model_config = {
         "populate_by_name": True,

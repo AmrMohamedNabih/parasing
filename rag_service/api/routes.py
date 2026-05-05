@@ -175,8 +175,8 @@ async def ask_question(req: AskRequest) -> AskResponse:
     question_id = str(uuid.uuid4())
 
     # 1. Log request
-    logger.info("Incoming ask request: deep_analysis=%s, document_ids=%s, question=%s", 
-                req.deep_analysis, req.document_ids, req.question[:50])
+    logger.info("Incoming ask request: %s", req.model_dump())
+    logger.info("Incoming ask request (summary present): %s", bool(req.summary))
 
     # 1. Embed the question
     try:
@@ -225,7 +225,8 @@ async def ask_question(req: AskRequest) -> AskResponse:
                 req.language,
                 majority_rtl,
                 deep_analysis=req.deep_analysis,
-                task_plan=req.task_plan
+                task_plan=req.task_plan,
+                summary=req.summary
             ):
                 answer_parts.append(chunk)
 
@@ -275,3 +276,16 @@ async def ask_question(req: AskRequest) -> AskResponse:
 @router.get("/health")
 async def health():
     return {"status": "ok", "service": "rag-service"}
+
+
+class SummarizeRequest(BaseModel):
+    history_text: str
+
+
+@router.post("/summarize")
+async def summarize(req: SummarizeRequest):
+    logger.info("Summarize request received")
+    from rag_service.services.generation_service import generation_service
+    new_summary = await generation_service.generate_updated_summary(req.history_text)
+    logger.info("Summarize result: %s", new_summary[:50] + "..." if new_summary else "NONE")
+    return {"updatedSummary": new_summary}

@@ -59,15 +59,23 @@ def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool =
             "Do NOT include a 'Relevant passages:' section or header at the end."
         )
     
+    summary_instruction = (
+        "\n\nAt the end of your response, you MUST provide a single bullet point "
+        "summarizing this specific interaction (max 20 words). Wrap it in <summary_point> tags. "
+        "Example: <summary_point>- User asked about X and AI explained Y.</summary_point>"
+    )
+
     lang_suffix = {
         "ar":   " Respond in Arabic.",
         "en":   " Respond in English.",
         "auto": " Respond in the same language as the question.",
     }
-    return base + lang_suffix.get(language, lang_suffix["auto"])
+    return base + summary_instruction + lang_suffix.get(language, lang_suffix["auto"])
 
 
-def _user_prompt(question: str, scored_points: list, deep_analysis: bool = False) -> str:
+def _user_prompt(question: str, scored_points: list, deep_analysis: bool = False, summary: str = None) -> str:
+    summary_context = f"\n\n[Background Context: Summary of previous points in this conversation]\n{summary}\n[End of Background Context]" if summary else ""
+    
     passages = []
     for i, pt in enumerate(scored_points, 1):
         p = pt.payload
@@ -81,7 +89,7 @@ def _user_prompt(question: str, scored_points: list, deep_analysis: bool = False
     return (
         "Context passages:\n\n"
         + "\n\n".join(passages)
-        + f"\n\n---\nQuestion: {question}{analysis_context}\n\nAnswer:"
+        + f"\n\n---\n{summary_context}\nQuestion: {question}{analysis_context}\n\nAnswer:"
     )
 
 
@@ -134,12 +142,13 @@ class GenerationService:
         majority_rtl: bool,
         deep_analysis: bool = False,
         task_plan: bool = False,
+        summary: str = None,
     ) -> AsyncGenerator[str, None]:
         if majority_rtl:
             language = "ar"
 
         system_msg = _system_prompt(language, deep_analysis, task_plan)
-        user_msg = _user_prompt(question, scored_points, deep_analysis)
+        user_msg = _user_prompt(question, scored_points, deep_analysis, summary)
         
         if deep_analysis:
             logger.info("--- DEEP ANALYSIS PROMPT START ---")
@@ -171,6 +180,53 @@ class GenerationService:
             if chunk is None:
                 break
             yield chunk
+
+    async def generate_updated_summary(self, history_text: str) -> str:
+        """
+        Generates an updated bullet-point summary of the conversation.
+        """
+        if not self._configured:
+            return None
+
+        prompt = (
+            "You are a helpful assistant that maintains a concise conversation history. "
+            "Based on the following recent exchange, provide an updated "
+            "summary in bullet points. Keep it to the most important points only (max 5-7 points).\n\n"
+            f"Conversation History:\n{history_text}\n\n"
+            "Updated Summary (Bullet points):"
+        )
+
+        logger.info("Generating updated summary...")
+        try:
+            if settings.LLM_PROVIDER == "gemini":
+                model = genai.GenerativeModel(settings.GEMINI_MODEL)
+                response = model.generate_content(prompt)
+                logger.info("Gemini raw response: %s", response.text if hasattr(response, 'text') else "NO TEXT")
+                new_summary = response.text.strip()
+                logger.info("New summary generated: %s", new_summary[:100] + "...")
+                return new_summary
+            elif settings.LLM_PROVIDER == "openai":
+                response = self._openai_client.chat.completions.create(
+                    model=settings.OPENAI_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=512
+                )
+                new_summary = response.choices[0].message.content.strip()
+                logger.info("New summary generated: %s", new_summary[:100] + "...")
+                return new_summary
+            elif settings.LLM_PROVIDER == "mistral":
+                response = self._mistral_client.chat.complete(
+                    model=settings.MISTRAL_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=512
+                )
+                new_summary = response.choices[0].message.content.strip()
+                logger.info("New summary generated: %s", new_summary[:100] + "...")
+                return new_summary
+            return None
+        except Exception as exc:
+            logger.error("Summary generation failed: %s", exc)
+            return None
 
     def _run_gemini_stream(self, prompt, queue, loop, max_tokens=1024):
         model = genai.GenerativeModel(settings.GEMINI_MODEL)
