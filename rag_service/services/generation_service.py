@@ -25,7 +25,7 @@ _GENERATION_CONFIG_GEMINI = genai.types.GenerationConfig(
     max_output_tokens=1024,
 )
 
-def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool = False, has_context: bool = True) -> str:
+def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool = False, has_context: bool = True, mindmap_mode: bool = False) -> str:
     if deep_analysis:
         base = (
             "You are a highly analytical research assistant. Your task is to provide "
@@ -51,6 +51,17 @@ def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool =
             "Available Priorities: HIGH, MEDIUM, LOW.\n"
             "Use ISO 8601 format for dueDate. If no specific date is mentioned, spread them out starting from tomorrow."
         )
+    elif mindmap_mode:
+        base = (
+            "You are an expert at creating Excalidraw whiteboards. "
+            "Based on the provided context, generate a valid Excalidraw JSON structure "
+            "representing a mindmap or flowchart of the concepts discussed. "
+            "Your output MUST be raw JSON only, without any markdown formatting like ```json. "
+            "The JSON must have the following structure: "
+            '{"type": "excalidraw", "version": 2, "source": "rag", "elements": [...], "appState": {...}} '
+            "You can use shapes like 'rectangle', 'diamond', 'ellipse', 'text', and 'arrow' to connect them. "
+            "Ensure the elements are visually spaced out so they don't overlap."
+        )
     else:
         if has_context:
             base = (
@@ -66,11 +77,13 @@ def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool =
                 "knowledge using the conversation history if available."
             )
     
-    summary_instruction = (
-        "\n\nAt the end of your response, you MUST provide a single bullet point "
-        "summarizing this specific interaction (max 20 words). Wrap it in <summary_point> tags. "
-        "Example: <summary_point>- User asked about X and AI explained Y.</summary_point>"
-    )
+    summary_instruction = ""
+    if not mindmap_mode:
+        summary_instruction = (
+            "\n\nAt the end of your response, you MUST provide a single bullet point "
+            "summarizing this specific interaction (max 20 words). Wrap it in <summary_point> tags. "
+            "Example: <summary_point>- User asked about X and AI explained Y.</summary_point>"
+        )
 
     lang_suffix = {
         "ar":   " Respond in Arabic.",
@@ -150,12 +163,13 @@ class GenerationService:
         deep_analysis: bool = False,
         task_plan: bool = False,
         summary: str = None,
+        mindmap_mode: bool = False,
     ) -> AsyncGenerator[str, None]:
         if majority_rtl:
             language = "ar"
 
         has_context = len(scored_points) > 0
-        system_msg = _system_prompt(language, deep_analysis, task_plan, has_context)
+        system_msg = _system_prompt(language, deep_analysis, task_plan, has_context, mindmap_mode)
         user_msg = _user_prompt(question, scored_points, deep_analysis, summary)
         
         # ── INTERACTION LOGGING ──────────────────────────────────────────────
@@ -170,18 +184,21 @@ class GenerationService:
         logger.info(interaction_log)
         # ────────────────────────────────────────────────────────────────────
 
-        max_tokens = 2048 if deep_analysis else 1024
+        if mindmap_mode:
+            max_tokens = 8192
+        else:
+            max_tokens = 2048 if deep_analysis else 1024
 
         queue: asyncio.Queue[str | None] = asyncio.Queue()
         loop = asyncio.get_event_loop()
 
         def _run_stream() -> None:
             if settings.LLM_PROVIDER == "gemini":
-                self._run_gemini_stream(system_msg + "\n\n" + user_msg, queue, loop, max_tokens)
+                self._run_gemini_stream(system_msg + "\n\n" + user_msg, queue, loop, max_tokens, mindmap_mode)
             elif settings.LLM_PROVIDER == "mistral":
-                self._run_mistral_stream(system_msg, user_msg, queue, loop, max_tokens)
+                self._run_mistral_stream(system_msg, user_msg, queue, loop, max_tokens, mindmap_mode)
             else:
-                self._run_openai_stream(system_msg, user_msg, queue, loop, max_tokens)
+                self._run_openai_stream(system_msg, user_msg, queue, loop, max_tokens, mindmap_mode)
 
         thread = threading.Thread(target=_run_stream, daemon=True)
         thread.start()
@@ -244,12 +261,16 @@ class GenerationService:
             logger.error("Summary generation failed: %s", exc)
             return None
 
-    def _run_gemini_stream(self, prompt, queue, loop, max_tokens=1024):
+    def _run_gemini_stream(self, prompt, queue, loop, max_tokens=1024, is_json=False):
         model = genai.GenerativeModel(settings.GEMINI_MODEL)
-        config = genai.types.GenerationConfig(
-            temperature=0.2,
-            max_output_tokens=max_tokens,
-        )
+        kwargs = {
+            "temperature": 0.2,
+            "max_output_tokens": max_tokens,
+        }
+        if is_json:
+            kwargs["response_mime_type"] = "application/json"
+            
+        config = genai.types.GenerationConfig(**kwargs)
         try:
             response = model.generate_content(
                 prompt, stream=True, generation_config=config
@@ -267,7 +288,7 @@ class GenerationService:
         finally:
             asyncio.run_coroutine_threadsafe(queue.put(None), loop)
 
-    def _run_mistral_stream(self, system_msg, user_msg, queue, loop, max_tokens=1024):
+    def _run_mistral_stream(self, system_msg, user_msg, queue, loop, max_tokens=1024, is_json=False):
         try:
             response = self._mistral_client.chat.stream(
                 model=settings.MISTRAL_MODEL,
@@ -289,7 +310,7 @@ class GenerationService:
         finally:
             asyncio.run_coroutine_threadsafe(queue.put(None), loop)
 
-    def _run_openai_stream(self, system_msg, user_msg, queue, loop, max_tokens=1024):
+    def _run_openai_stream(self, system_msg, user_msg, queue, loop, max_tokens=1024, is_json=False):
         try:
             response = self._openai_client.chat.completions.create(
                 model=settings.OPENAI_MODEL,

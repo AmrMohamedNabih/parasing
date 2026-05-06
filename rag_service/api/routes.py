@@ -192,9 +192,10 @@ async def ask_question(req: AskRequest) -> AskResponse:
 
     try:
         if is_rag_required:
-            if req.global_search or req.deep_analysis:
-                # Use full text for global search or specific deep analysis
-                logger.info("Fetching full text from DB. global_search=%s, deep_analysis=%s", req.global_search, req.deep_analysis)
+            if req.global_search or req.deep_analysis or req.mindmap_mode:
+                # Use full text for global search, specific deep analysis, or mindmap mode
+                logger.info("Fetching full text from DB. global_search=%s, deep_analysis=%s, mindmap_mode=%s", 
+                            req.global_search, req.deep_analysis, req.mindmap_mode)
                 scored_points = await document_service.fetch_full_text(
                     document_ids=req.document_ids, 
                     subject_id=req.subject_id if req.global_search else None
@@ -240,7 +241,8 @@ async def ask_question(req: AskRequest) -> AskResponse:
                 majority_rtl,
                 deep_analysis=req.deep_analysis,
                 task_plan=req.task_plan,
-                summary=req.summary
+                summary=req.summary,
+                mindmap_mode=req.mindmap_mode
             ):
                 answer_parts.append(chunk)
 
