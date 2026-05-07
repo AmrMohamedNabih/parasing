@@ -45,10 +45,10 @@ class SearchService:
         direction='rtl' in their Qdrant payload. Used by generation_service
         to auto-switch the system prompt to Arabic.
         """
-        # FORCED FOR DEBUGGING: ignoring settings and parameters
-        top_k = 30
+        if top_k is None:
+            top_k = settings.TOP_K_RESULTS
         
-        logger.info("SEARCH PARAMS (FORCED): top_k=%d, threshold=%f", top_k, settings.SIMILARITY_THRESHOLD)
+        logger.info("SEARCH PARAMS: top_k=%d, threshold=%f", top_k, settings.SIMILARITY_THRESHOLD)
 
         must: list = [
             FieldCondition(key="user_id", match=MatchValue(value=user_id))
@@ -78,12 +78,26 @@ class SearchService:
                 collection_name="rag_text_blocks",
                 query_vector=query_vector,
                 query_filter=Filter(must=must),
-                limit=top_k,
+                limit=40,  # Increase limit to allow dynamic filtering a wider range
                 score_threshold=settings.SIMILARITY_THRESHOLD,
                 with_payload=True,
             )
 
         logger.info("QDRANT RETURNED %d points", len(results))
+
+        # ── Dynamic Similarity Filtering ──────────────────────────────────────
+        if results:
+            top_score = results[0].score
+            # Only keep chunks within 0.07 of the best match, and above absolute threshold
+            dynamic_threshold = max(settings.SIMILARITY_THRESHOLD, top_score - 0.07)
+            
+            original_count = len(results)
+            results = [p for p in results if p.score >= dynamic_threshold]
+            
+            logger.info(
+                "Dynamic Filtering: Kept %d/%d points (Top: %.4f, Dyn Threshold: %.4f)",
+                len(results), original_count, top_score, dynamic_threshold
+            )
 
         # ── Arabic majority detection — from payload, never from question ──
         rtl_count = sum(

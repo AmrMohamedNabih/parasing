@@ -28,11 +28,13 @@ _GENERATION_CONFIG_GEMINI = genai.types.GenerationConfig(
 def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool = False, has_context: bool = True, mindmap_mode: bool = False) -> str:
     if deep_analysis:
         base = (
-            "You are a highly analytical research assistant. Your task is to provide "
-            "a deep, comprehensive analysis and summary of the provided context passages. "
-            "Focus on key findings, methodologies, conclusions, and any significant takeaways. "
-            "Structure your response logically with headers and bullet points where appropriate. "
-            "Base your answer ONLY on the provided context."
+            "You are a highly analytical research expert. Your task is to provide "
+            "a deep, comprehensive analysis of the provided context. \n\n"
+            "CRITICAL GUIDELINES:\n"
+            "1. DO NOT refer to passages by their labels (e.g., 'Passage 1' or 'Context Block'). "
+            "2. Focus on key findings, methodologies, and conclusions. "
+            "3. Structure your response logically with professional headers and bullet points. "
+            "4. Reason through the entire context step-by-step to ensure no detail is missed."
         )
     elif task_plan:
         base = (
@@ -65,10 +67,15 @@ def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool =
     else:
         if has_context:
             base = (
-                "You are a helpful assistant answering questions based ONLY on the "
-                "provided context passages. If the answer cannot be found in the "
-                "context, say so clearly. Do not hallucinate. "
-                "Do NOT include a 'Relevant passages:' section or header at the end."
+                "You are an intelligent and professional research assistant. "
+                "Your task is to provide accurate, natural-sounding answers based ONLY on the "
+                "provided context passages. \n\n"
+                "CRITICAL GUIDELINES:\n"
+                "1. DO NOT mention labels like '[CONTEXT {i}]', 'Passage 1', or 'Source 1' in your response. "
+                "2. DO NOT say things like 'According to Passage 1...' or 'The context mentions...'. "
+                "3. Answer the question directly and naturally as if you are the expert providing the information. "
+                "4. If the answer cannot be found in the context, say so clearly. Do not hallucinate.\n"
+                "5. Analyze all provided context carefully and reason through the information before responding."
             )
         else:
             base = (
@@ -100,8 +107,8 @@ def _user_prompt(question: str, scored_points: list, deep_analysis: bool = False
     for i, pt in enumerate(scored_points, 1):
         p = pt.payload
         passages.append(
-            f"[PASSAGE {i}] (Document: {p.get('filename', 'Unknown')}, page {p.get('page_number', '?')}, "
-            f"score {pt.score:.2f})\n{p.get('text', '')}"
+            f"[CONTEXT BLOCK {i}] (Document: {p.get('filename', 'Unknown')}, page {p.get('page_number', '?')})\n"
+            f"{p.get('text', '')}"
         )
     
     analysis_context = "\n\n(Note: This is a deep analysis request. Please provide a thorough breakdown.)" if deep_analysis else ""

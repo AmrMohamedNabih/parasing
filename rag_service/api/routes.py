@@ -192,24 +192,26 @@ async def ask_question(req: AskRequest) -> AskResponse:
 
     try:
         if is_rag_required:
-            if req.global_search or req.deep_analysis or req.mindmap_mode:
-                # Use full text for global search, specific deep analysis, or mindmap mode
-                logger.info("Fetching full text from DB. global_search=%s, deep_analysis=%s, mindmap_mode=%s", 
-                            req.global_search, req.deep_analysis, req.mindmap_mode)
+            if req.deep_analysis or req.mindmap_mode:
+                # Use full text for specific deep analysis or mindmap mode (holistic tasks)
+                logger.info("Fetching full text from DB. deep_analysis=%s, mindmap_mode=%s", 
+                            req.deep_analysis, req.mindmap_mode)
                 scored_points = await document_service.fetch_full_text(
                     document_ids=req.document_ids, 
-                    subject_id=req.subject_id if req.global_search else None
+                    subject_id=req.subject_id
                 )
                 majority_rtl = sum(1 for p in scored_points if p.payload.get("direction") == "rtl") > len(scored_points) / 2 if scored_points else False
             else:
-                # Normal semantic search (specific documents only)
-                logger.info("Performing semantic search for specific documents.")
+                # Both normal search AND global search (Entire Subject) use semantic retrieval
+                logger.info("Performing semantic search. global_search=%s", req.global_search)
+                
                 scored_points, majority_rtl = await search_service.semantic_search(
                     query_vector=query_vector,
                     user_id=req.user_id,
                     subject_id=req.subject_id,
-                    document_ids=req.document_ids,
-                    top_k=req.top_k or settings.TOP_K_RESULTS,
+                    # If global search, ignore specific document_ids to search the whole subject
+                    document_ids=req.document_ids if not req.global_search else None,
+                    top_k=req.top_k, # Now handled dynamically in search_service
                 )
         else:
             logger.info("No documents or global search requested. Skipping retrieval.")
