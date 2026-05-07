@@ -22,10 +22,10 @@ logger = logging.getLogger(__name__)
 
 _GENERATION_CONFIG_GEMINI = genai.types.GenerationConfig(
     temperature=0.2,
-    max_output_tokens=1024,
+    max_output_tokens=2048,
 )
 
-def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool = False, has_context: bool = True, mindmap_mode: bool = False) -> str:
+def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool = False, has_context: bool = True, mindmap_mode: bool = False, notebook_mode: bool = False) -> str:
     if deep_analysis:
         base = (
             "You are a highly analytical research expert. Your task is to provide "
@@ -64,6 +64,20 @@ def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool =
             "You can use shapes like 'rectangle', 'diamond', 'ellipse', 'text', and 'arrow' to connect them. "
             "Ensure the elements are visually spaced out so they don't overlap."
         )
+    elif notebook_mode:
+        base = (
+            "You are an Expert academic note-taker. "
+            "Your goal is to create comprehensive, well-structured, and highly readable study notes "
+            "based on the provided document context and the user's specific request.\n\n"
+            "Requirements:\n"
+            "1. Focus the notes on the themes and topics requested by the user.\n"
+            "2. Use clear headings and sub-headings (Markdown format).\n"
+            "3. Use bullet points for key concepts, definitions, and important details.\n"
+            "4. Ensure the notes are logical and easy to study from.\n"
+            "5. Do NOT include phrases like 'Based on the context' or 'The document says'.\n"
+            "6. Incorporate specific details and examples from the provided context blocks.\n"
+            "7. Focus only on the educational content."
+        )
     else:
         if has_context:
             base = (
@@ -85,7 +99,7 @@ def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool =
             )
     
     summary_instruction = ""
-    if not mindmap_mode:
+    if not mindmap_mode and not notebook_mode:
         summary_instruction = (
             "\n\nAt the end of your response, you MUST provide a single bullet point "
             "summarizing this specific interaction (max 20 words). Wrap it in <summary_point> tags. "
@@ -171,12 +185,13 @@ class GenerationService:
         task_plan: bool = False,
         summary: str = None,
         mindmap_mode: bool = False,
+        notebook_mode: bool = False,
     ) -> AsyncGenerator[str, None]:
         if majority_rtl:
             language = "ar"
 
         has_context = len(scored_points) > 0
-        system_msg = _system_prompt(language, deep_analysis, task_plan, has_context, mindmap_mode)
+        system_msg = _system_prompt(language, deep_analysis, task_plan, has_context, mindmap_mode, notebook_mode)
         user_msg = _user_prompt(question, scored_points, deep_analysis, summary)
         
         # ── INTERACTION LOGGING ──────────────────────────────────────────────
@@ -191,7 +206,7 @@ class GenerationService:
         logger.info(interaction_log)
         # ────────────────────────────────────────────────────────────────────
 
-        if mindmap_mode:
+        if mindmap_mode or notebook_mode:
             max_tokens = 8192
         else:
             max_tokens = 2048 if deep_analysis else 1024

@@ -25,6 +25,7 @@ class QuestionRequest(BaseModel):
     task_plan: bool = False
     global_search: bool = False
     mindmap_mode: bool = False
+    notebook_mode: bool = False
     stream_via: str = "http"        # "kafka" | "http" | "both"
 
     model_config = {
@@ -113,6 +114,7 @@ class AskRequest(BaseModel):
     task_plan: bool = False
     global_search: bool = False
     mindmap_mode: bool = False
+    notebook_mode: bool = False
     summary: Optional[str] = None
 
     model_config = {
