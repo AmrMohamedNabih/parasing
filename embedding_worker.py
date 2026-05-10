@@ -44,7 +44,7 @@ VECTOR_DIM = 1024
 POLL_INTERVAL = 30          # seconds between polls
 FETCH_LIMIT = 64            # rows per DB fetch
 ENCODE_BATCH_SIZE = 32      # SentenceTransformer internal batch size
-MODEL_NAME = "intfloat/multilingual-e5-large"
+MODEL_NAME = "microsoft/harrier-oss-v1-0.6b"
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 
@@ -169,7 +169,7 @@ class EmbeddingWorker:
     # ── Encoding ──────────────────────────────────────────────────────────
 
     async def _embed(self, texts: list[str]):
-        prefixed = [f"passage: {t}" for t in texts]
+        prefixed = texts # BGE-M3 does not need 'passage: ' prefix
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             _executor,

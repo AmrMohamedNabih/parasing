@@ -14,7 +14,7 @@ from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 
-_MODEL_NAME = "intfloat/multilingual-e5-large"
+_MODEL_NAME = "microsoft/harrier-oss-v1-0.6b"
 _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="embed_svc")
 
 
@@ -32,7 +32,7 @@ class EmbeddingService:
 
     async def encode_query(self, text: str) -> list[float]:
         """
-        Encode a user question. Prepends 'query: ' as required by e5 models.
+        Encode a user question using the web_search_query prompt.
         Returns a normalised float list ready for Qdrant.
         """
         loop = asyncio.get_running_loop()
@@ -40,7 +40,8 @@ class EmbeddingService:
             _executor,
             partial(
                 self._model.encode,
-                f"query: {text}",
+                text,
+                prompt_name="web_search_query",
                 normalize_embeddings=True,
                 show_progress_bar=False,
             ),

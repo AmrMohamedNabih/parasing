@@ -142,9 +142,12 @@
         
         <div class="controls">
             <div class="detail-label">Select Subject</div>
-            <select id="subject-select">
-                <option value="">-- Choose a subject --</option>
-            </select>
+            <div style="display: flex; gap: 5px; align-items: center;">
+                <select id="subject-select" style="flex-grow: 1;">
+                    <option value="">-- Choose a subject --</option>
+                </select>
+                <button id="rebuild-btn" title="Force Rebuild Graph" style="padding: 8px; background: #475569; border: none; border-radius: 4px; color: white; cursor: pointer; display: none;">🔄</button>
+            </div>
         </div>
 
         <div class="controls">
@@ -225,9 +228,16 @@
                 });
 
                 select.addEventListener('change', (e) => {
-                    if (e.target.value) loadGraph(e.target.value);
+                    const rebuildBtn = document.getElementById('rebuild-btn');
+                    if (e.target.value) {
+                        loadGraph(e.target.value);
+                        rebuildBtn.style.display = 'block';
+                    } else {
+                        rebuildBtn.style.display = 'none';
+                    }
                 });
 
+                document.getElementById('rebuild-btn').onclick = triggerRebuild;
                 document.getElementById('search-btn').onclick = runTestQuery;
                 document.getElementById('query-input').onkeydown = (e) => {
                     if (e.key === 'Enter') runTestQuery();
@@ -236,6 +246,25 @@
             } catch (err) {
                 console.error("Failed to load subjects:", err);
                 alert("Could not connect to RAG service at " + API_BASE);
+            }
+        }
+
+        async function triggerRebuild() {
+            const subjectId = document.getElementById('subject-select').value;
+            if (!subjectId) return;
+
+            if (!confirm("Are you sure you want to force a rebuild of this EDAG graph? This will overwrite the current version.")) return;
+
+            document.getElementById('loader').style.display = 'block';
+            try {
+                const response = await fetch(`${API_BASE}/api/edag/rebuild/${subjectId}`, { method: 'POST' });
+                const data = await response.json();
+                alert("Build requested! Please wait a few moments for the graph to be generated, then refresh this subject.");
+            } catch (err) {
+                console.error("Rebuild failed:", err);
+                alert("Failed to trigger rebuild.");
+            } finally {
+                document.getElementById('loader').style.display = 'none';
             }
         }
 
@@ -299,6 +328,7 @@
             await sleep(600);
 
             // Stage 4: Leaf Nodes
+            await sleep(600);
             highlightSearchResults(results);
         }
 
@@ -379,12 +409,16 @@
             
             try {
                 const response = await fetch(`${API_BASE}/api/edag/graph/${subjectId}`);
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail || "Failed to load graph");
+                }
                 const data = await response.json();
                 currentGraphData = data;
                 renderGraph(data);
             } catch (err) {
                 console.error("Failed to load graph:", err);
-                alert("Error loading graph data");
+                alert("Error loading graph data: " + err.message);
             } finally {
                 document.getElementById('loader').style.display = 'none';
             }

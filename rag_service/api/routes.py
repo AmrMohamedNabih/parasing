@@ -399,3 +399,49 @@ async def get_edag_graph(subject_id: str):
         logger.error("Failed to read EDAG graph for %s: %s", subject_id, e)
         raise HTTPException(status_code=500, detail="Failed to load graph data.")
 
+
+@router.post("/api/edag/rebuild/{subject_id}")
+async def rebuild_edag_graph(subject_id: str, user_id: str = "manual"):
+    """Manually triggers an EDAG build for a subject."""
+    from app.db.session import AsyncSessionFactory
+    from app.db.models.subject import Subject
+    from sqlalchemy import select
+    import os
+    import json
+    from aiokafka import AIOKafkaProducer
+
+    # 1. Verify subject exists
+    async with AsyncSessionFactory() as db:
+        res = await db.execute(select(Subject).where(Subject.id == uuid.UUID(subject_id)))
+        subject = res.scalar_one_or_none()
+        if not subject:
+            raise HTTPException(status_code=404, detail="Subject not found.")
+
+        # 2. Reset status
+        subject.edag_status = "building"
+        await db.commit()
+
+    # 3. Publish Kafka event
+    kafka_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "127.0.0.1:9094")
+    try:
+        producer = AIOKafkaProducer(
+            bootstrap_servers=kafka_servers,
+            value_serializer=lambda v: json.dumps(v).encode(),
+        )
+        await producer.start()
+        try:
+            await producer.send(
+                "edag.build.requested",
+                {
+                    "subject_id": subject_id,
+                    "user_id": user_id,
+                    "triggered_at": "manual_request",
+                },
+            )
+        finally:
+            await producer.stop()
+        return {"status": "build_requested", "subject_id": subject_id}
+    except Exception as e:
+        logger.error("Failed to trigger EDAG rebuild for %s: %s", subject_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+

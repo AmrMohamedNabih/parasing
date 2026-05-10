@@ -76,8 +76,8 @@ alembic upgrade head
 ```bash
 .\venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload --port 8000
+.\venv\Scripts\python -m edag.edag_index_builder
 ```
-
 ## 🔌 API Endpoints
 
 | Method | Endpoint | Description |
