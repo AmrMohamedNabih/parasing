@@ -12,7 +12,7 @@ from pydantic_settings import BaseSettings
 class RagSettings(BaseSettings):
     # ── Phase 1 (shared) ──────────────────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://rag_user:rag_password@localhost:5432/rag_db"
-    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9094"
+    KAFKA_BOOTSTRAP_SERVERS: str = "127.0.0.1:9094"
     DEBUG: bool = False
 
     # ── Qdrant ───────────────────────────────────────────────────────────

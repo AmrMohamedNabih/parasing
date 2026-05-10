@@ -1,7 +1,7 @@
 # This script launches the three parsing services in separate PowerShell windows.
 # It automatically activates the virtual environment and sets the correct directory.
 
-$ParsingDir = Join-Path $PSScriptRoot "parsing"
+$ParsingDir = $PSScriptRoot
 
 function Start-ServiceWindow {
     param (
@@ -22,10 +22,10 @@ function Start-ServiceWindow {
 Write-Host "Launching Parsing Services..." -ForegroundColor Green
 
 # 1. RAG Service (Port 8001)
-Start-ServiceWindow -Title "RAG Service (8001)" -Command "uvicorn rag_service.main:app --reload --port 8001"
+Start-ServiceWindow -Title "RAG Service (8001)" -Command "uvicorn rag_service.main:app --reload --host 0.0.0.0 --port 8001"
 
 # 2. Embedding Worker
 Start-ServiceWindow -Title "Embedding Worker" -Command "python embedding_worker.py"
 
 # 3. Parsing Main API (Port 8000)
-Start-ServiceWindow -Title "Parsing API (8000)" -Command "uvicorn app.main:app --reload --port 8000"
+Start-ServiceWindow -Title "Parsing API (8000)" -Command "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
