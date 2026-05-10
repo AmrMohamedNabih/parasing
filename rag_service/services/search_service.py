@@ -7,6 +7,7 @@ based purely on the retrieved passage payloads (not the question text).
 """
 
 import logging
+import uuid
 from typing import Optional
 
 from qdrant_client import QdrantClient
@@ -37,7 +38,8 @@ class SearchService:
         subject_id: Optional[str] = None,
         document_ids: Optional[list[str]] = None,
         top_k: Optional[int] = None,
-    ) -> tuple[list[ScoredPoint], bool]:
+        use_edag: bool = False,
+    ) -> tuple[list, bool]:
         """
         Returns (scored_points, majority_rtl).
 
@@ -48,6 +50,34 @@ class SearchService:
         if top_k is None:
             top_k = settings.TOP_K_RESULTS
         
+        # ── EDAG Routing Decision ─────────────────────────────────────────────
+        if use_edag and subject_id:
+            try:
+                # Check DB for edag_status
+                from app.db.session import AsyncSessionFactory
+                from app.db.models.subject import Subject
+                from sqlalchemy import select
+                from edag.edag_retriever import get_or_load_edag_retriever
+
+                async with AsyncSessionFactory() as db:
+                    subject_result = await db.execute(
+                        select(Subject).where(Subject.id == uuid.UUID(subject_id))
+                    )
+                    subject = subject_result.scalar_one_or_none()
+                    
+                    if subject and subject.edag_status == "ready":
+                        logger.info("[EDAG] Routing query through EDAG for subject=%s", subject_id)
+                        retriever = get_or_load_edag_retriever(subject_id)
+                        import numpy as np
+                        q_vec = np.array(query_vector, dtype=np.float32)
+                        results, trace = await retriever.search_async(q_vec, top_k=top_k)
+                        
+                        # Continue to post-processing (RTL detection, filenames)
+                        return await self._post_process_results(results)
+            except Exception as e:
+                logger.error("[EDAG] Failed to route via EDAG, falling back to Qdrant: %s", e)
+
+        # ── Existing Qdrant Flat Search ───────────────────────────────────────
         logger.info("SEARCH PARAMS: top_k=%d, threshold=%f", top_k, settings.SIMILARITY_THRESHOLD)
 
         must: list = [
@@ -85,21 +115,31 @@ class SearchService:
 
         logger.info("QDRANT RETURNED %d points", len(results))
 
-        # ── Dynamic Similarity Filtering ──────────────────────────────────────
-        if results:
-            top_score = results[0].score
-            # Only keep chunks within 0.07 of the best match, and above absolute threshold
-            dynamic_threshold = max(settings.SIMILARITY_THRESHOLD, top_score - 0.07)
-            
-            original_count = len(results)
-            results = [p for p in results if p.score >= dynamic_threshold]
-            
-            logger.info(
-                "Dynamic Filtering: Kept %d/%d points (Top: %.4f, Dyn Threshold: %.4f)",
-                len(results), original_count, top_score, dynamic_threshold
-            )
+        return await self._post_process_results(results)
 
-        # ── Arabic majority detection — from payload, never from question ──
+        # ── Resolve filenames from PostgreSQL ──
+        await self._resolve_filenames(results)
+
+        return results, majority_rtl
+
+    async def _post_process_results(self, results: list) -> tuple[list, bool]:
+        """Shared post-processing for both Qdrant and EDAG paths."""
+        if not results:
+            return [], False
+
+        # ── Dynamic Similarity Filtering ──────────────────────────────────────
+        top_score = results[0].score
+        dynamic_threshold = max(settings.SIMILARITY_THRESHOLD, top_score - 0.07)
+        
+        original_count = len(results)
+        results = [p for p in results if p.score >= dynamic_threshold]
+        
+        logger.info(
+            "Dynamic Filtering: Kept %d/%d points (Top: %.4f, Dyn Threshold: %.4f)",
+            len(results), original_count, top_score, dynamic_threshold
+        )
+
+        # ── Arabic majority detection ──
         rtl_count = sum(
             1 for p in results if p.payload.get("direction") == "rtl"
         )

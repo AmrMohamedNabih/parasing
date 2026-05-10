@@ -203,6 +203,7 @@ async def _run_pipeline(req, embedding_service, search_service, generation_servi
                 subject_id=req.subject_id,
                 document_ids=req.document_ids,
                 top_k=req.top_k or settings.TOP_K_RESULTS,
+                use_edag=req.global_search,
             )
     except Exception as exc:
         logger.error("Context retrieval failed for %s: %s", req.question_id, exc)
@@ -269,10 +270,11 @@ async def _run_pipeline(req, embedding_service, search_service, generation_servi
 # ── Consumer loop ─────────────────────────────────────────────────────────────
 
 async def consume_question_events() -> None:
-    logger.info("Starting Kafka consumer on '%s'", settings.KAFKA_QUESTION_TOPIC)
+    logger.info("Starting Kafka consumer on '%s' and '%s'", settings.KAFKA_QUESTION_TOPIC, settings.KAFKA_EDAG_COMPLETED_TOPIC)
 
     consumer = AIOKafkaConsumer(
         settings.KAFKA_QUESTION_TOPIC,
+        settings.KAFKA_EDAG_COMPLETED_TOPIC,
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
         group_id="rag-service",
         auto_offset_reset="latest",
@@ -294,12 +296,22 @@ async def consume_question_events() -> None:
     try:
         async for msg in consumer:
             try:
-                req = QuestionRequest(**msg.value)
-                # State is pre-registered so SSE never races
-                if req.question_id not in QUESTION_STATE:
-                    register_question(req)
-                asyncio.create_task(_process_question(req))
+                # Handle Question Requests
+                if msg.topic == settings.KAFKA_QUESTION_TOPIC:
+                    req = QuestionRequest(**msg.value)
+                    # State is pre-registered so SSE never races
+                    if req.question_id not in QUESTION_STATE:
+                        register_question(req)
+                    asyncio.create_task(_process_question(req))
+                
+                # Handle EDAG Build Completed
+                elif msg.topic == settings.KAFKA_EDAG_COMPLETED_TOPIC:
+                    subject_id = msg.value.get("subject_id")
+                    status = msg.value.get("status")
+                    if subject_id and status == "success":
+                        from edag.edag_retriever import invalidate_edag_cache
+                        invalidate_edag_cache(subject_id)
             except Exception as exc:
-                logger.error("Could not parse Kafka message: %s — %s", msg.value, exc)
+                logger.error("Could not parse Kafka message from topic %s: %s — %s", msg.topic, msg.value, exc)
     finally:
         await consumer.stop()

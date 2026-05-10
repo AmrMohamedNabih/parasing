@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDAG Graph Visualizer</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --accent-color: #38bdf8;
+            --meta-color: #fbbf24;
+            --parent-color: #3b82f6;
+            --leaf-color: #10b981;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Left */
+        #sidebar {
+            width: 320px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        /* Results Sidebar Right */
+        #results-sidebar {
+            width: 380px;
+            background-color: var(--sidebar-bg);
+            border-left: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: -4px 0 15px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        h1 { font-size: 1.5rem; margin-top: 0; color: var(--accent-color); }
+        h2 { font-size: 1.1rem; margin-top: 0; color: var(--leaf-color); border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        
+        .controls { margin-bottom: 20px; }
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #0f172a;
+            color: white;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .details-panel, .results-panel {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .result-item {
+            padding: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .result-item:hover { border-color: var(--accent-color); background: #1e293b; }
+        .result-score { font-size: 0.75rem; color: var(--accent-color); font-weight: bold; }
+        .result-meta { font-size: 0.7rem; color: #94a3b8; margin-top: 4px; }
+        .result-text { font-size: 0.85rem; margin-top: 8px; color: #cbd5e1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .detail-item { margin-bottom: 15px; }
+        .detail-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .detail-value { font-size: 0.95rem; line-height: 1.5; word-break: break-word; }
+
+        /* Graph Area */
+        #graph-container {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        #network {
+            width: 100%;
+            height: 100%;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            display: flex;
+            gap: 15px;
+            font-size: 0.8rem;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+
+        /* Loading Spinner */
+        #loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: var(--accent-color);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h1>EDAG Visualizer</h1>
+        
+        <div class="controls">
+            <div class="detail-label">Select Subject</div>
+            <select id="subject-select">
+                <option value="">-- Choose a subject --</option>
+            </select>
+        </div>
+
+        <div class="controls">
+            <div class="detail-label">Test Query (Hierarchy Search)</div>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" id="query-input" placeholder="Ask a question..." style="flex-grow: 1; padding: 8px; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 4px;">
+                <button id="search-btn" style="padding: 8px 12px; background: var(--accent-color); border: none; border-radius: 4px; color: #000; font-weight: bold; cursor: pointer;">Run</button>
+            </div>
+        </div>
+
+        <div id="details" class="details-panel">
+            <div id="empty-details" style="text-align: center; color: #64748b; margin-top: 50px;">
+                Double-click a node to see details
+            </div>
+            <div id="node-info" style="display: none;">
+                <div class="detail-item">
+                    <div class="detail-label">Node Type</div>
+                    <div id="val-type" class="detail-value" style="font-weight: bold;"></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Node ID</div>
+                    <div id="val-id" class="detail-value"></div>
+                </div>
+                <div id="text-block" class="detail-item">
+                    <div class="detail-label">Content</div>
+                    <div id="val-text" class="detail-value" style="background: #0f172a; padding: 10px; border-radius: 4px; border: 1px solid #334155; max-height: 300px; overflow-y: auto;"></div>
+                </div>
+                <div id="meta-block" class="detail-item">
+                    <div class="detail-label">Location</div>
+                    <div id="val-meta" class="detail-value"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="graph-container">
+        <div id="network"></div>
+        
+        <div id="loader"><div class="spinner"></div></div>
+
+        <div class="legend">
+            <div class="legend-item"><div class="dot" style="background: var(--meta-color);"></div> Meta Node</div>
+            <div class="legend-item"><div class="dot" style="background: var(--parent-color);"></div> Parent Node</div>
+            <div class="legend-item"><div class="dot" style="background: var(--leaf-color);"></div> Leaf Node</div>
+            <div class="legend-item"><div class="dot" style="background: #ef4444;"></div> Search Result</div>
+        </div>
+    </div>
+
+    <div id="results-sidebar">
+        <h2>Search Results</h2>
+        <div id="results-list" class="results-panel">
+            <div style="text-align: center; color: #64748b; margin-top: 50px;">
+                Retrieved chunks will appear here
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:8001"; // RAG Service
+        let network = null;
+        let nodes = null;
+        let edges = null;
+        let currentGraphData = null;
+        let highlightedNodes = [];
+
+        // Initialize
+        async function init() {
+            try {
+                const response = await fetch(`${API_BASE}/api/edag/subjects`);
+                const subjects = await response.json();
+                
+                const select = document.getElementById('subject-select');
+                subjects.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.name} (${s.leaf_count} chunks)`;
+                    select.appendChild(opt);
+                });
+
+                select.addEventListener('change', (e) => {
+                    if (e.target.value) loadGraph(e.target.value);
+                });
+
+                document.getElementById('search-btn').onclick = runTestQuery;
+                document.getElementById('query-input').onkeydown = (e) => {
+                    if (e.key === 'Enter') runTestQuery();
+                };
+
+            } catch (err) {
+                console.error("Failed to load subjects:", err);
+                alert("Could not connect to RAG service at " + API_BASE);
+            }
+        }
+
+        async function runTestQuery() {
+            const subjectId = document.getElementById('subject-select').value;
+            const question = document.getElementById('query-input').value;
+
+            if (!subjectId || !question) {
+                alert("Please select a subject and enter a question.");
+                return;
+            }
+
+            document.getElementById('loader').style.display = 'block';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/edag/test-query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ subject_id: subjectId, question: question })
+                });
+                const data = await response.json();
+                
+                // Animate the traversal trace
+                await animateTraversal(data.trace, data.retrieved_indices);
+                
+            } catch (err) {
+                console.error("Query failed:", err);
+                alert("Test query failed.");
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+            }
+        }
+
+        async function animateTraversal(trace, results) {
+            // 1. Clear previous
+            clearHighlights();
+
+            const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+            // Stage 1: Meta Nodes
+            trace.meta_ids.forEach(id => {
+                nodes.update({ id: `meta_${id}`, color: { background: '#ef4444' }, scale: 1.3 });
+                highlightedNodes.push(`meta_${id}`);
+            });
+            await sleep(600);
+
+            // Stage 2: Beam Parents
+            trace.beam_parent_ids.forEach(id => {
+                nodes.update({ id: `parent_${id}`, color: { background: '#ef4444' }, scale: 1.3 });
+                highlightedNodes.push(`parent_${id}`);
+            });
+            await sleep(600);
+
+            // Stage 3: Lateral Parents
+            trace.lateral_parent_ids.forEach(id => {
+                if (!trace.beam_parent_ids.includes(id)) {
+                    nodes.update({ id: `parent_${id}`, color: { background: '#f87171' }, scale: 1.2 });
+                    highlightedNodes.push(`parent_${id}`);
+                }
+            });
+            await sleep(600);
+
+            // Stage 4: Leaf Nodes
+            highlightSearchResults(results);
+        }
+
+        function clearHighlights() {
+            highlightedNodes.forEach(id => {
+                const node = nodes.get(id);
+                if (node) {
+                    let baseColor = '#10b981'; // leaf
+                    if (node.id.startsWith('meta_')) baseColor = '#fbbf24';
+                    if (node.id.startsWith('parent_')) baseColor = '#3b82f6';
+                    
+                    nodes.update({
+                        id: id,
+                        color: { background: baseColor },
+                        borderWidth: 2,
+                        scale: 1.0
+                    });
+                }
+            });
+            highlightedNodes = [];
+            document.getElementById('results-list').innerHTML = '';
+        }
+
+        function highlightSearchResults(results) {
+            const resultsList = document.getElementById('results-list');
+            resultsList.innerHTML = '';
+
+            if (results.length === 0) {
+                resultsList.innerHTML = '<div style="text-align: center; color: #64748b; margin-top: 50px;">No nodes were retrieved.</div>';
+                return;
+            }
+
+            const resultIds = [];
+            results.sort((a, b) => b.score - a.score).forEach(res => {
+                const parentId = currentGraphData.parent_of_leaf[res.index];
+                const leafId = `leaf_${res.index}`;
+                const meta = currentGraphData.leaf_meta[res.index];
+
+                showLeavesForParent(parentId);
+
+                nodes.update({
+                    id: leafId,
+                    color: { background: '#ef4444', border: '#b91c1c' },
+                    borderWidth: 4,
+                    scale: 1.5
+                });
+                highlightedNodes.push(leafId);
+                resultIds.push(leafId);
+
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.onclick = () => focusNode(leafId);
+                div.innerHTML = `
+                    <div class="result-score">Score: ${(res.score * 100).toFixed(1)}%</div>
+                    <div class="result-meta">Page ${meta.page} | ${meta.filename}</div>
+                    <div class="result-text">${meta.text}</div>
+                `;
+                resultsList.appendChild(div);
+            });
+
+            network.fit({
+                nodes: resultIds,
+                animation: { duration: 1000, easingFunction: 'easeInOutQuad' }
+            });
+        }
+
+        function focusNode(nodeId) {
+            network.focus(nodeId, {
+                scale: 1.2,
+                animation: { duration: 500 }
+            });
+            network.selectNodes([nodeId]);
+            showNodeDetails(nodeId);
+        }
+
+        async function loadGraph(subjectId) {
+            document.getElementById('loader').style.display = 'block';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/edag/graph/${subjectId}`);
+                const data = await response.json();
+                currentGraphData = data;
+                renderGraph(data);
+            } catch (err) {
+                console.error("Failed to load graph:", err);
+                alert("Error loading graph data");
+            } finally {
+                document.getElementById('loader').style.display = 'none';
+            }
+        }
+
+        function renderGraph(data) {
+            nodes = new vis.DataSet();
+            edges = new vis.DataSet();
+
+            // 1. Add Meta Nodes
+            const km = 10; // KM in config
+            for (let i = 0; i < km; i++) {
+                nodes.add({
+                    id: `meta_${i}`,
+                    label: `M${i}`,
+                    color: { background: '#fbbf24', border: '#d97706' },
+                    font: { color: '#000', weight: 'bold' },
+                    size: 30,
+                    shape: 'dot',
+                    type: 'Meta'
+                });
+            }
+
+            // 2. Add Parent Nodes
+            const parentOfLeaf = data.parent_of_leaf;
+            const metaOfParent = data.meta_of_parent;
+            const kp = metaOfParent.length;
+
+            for (let i = 0; i < kp; i++) {
+                nodes.add({
+                    id: `parent_${i}`,
+                    label: `P${i}`,
+                    color: { background: '#3b82f6', border: '#2563eb' },
+                    font: { color: '#fff' },
+                    size: 20,
+                    shape: 'dot',
+                    type: 'Parent'
+                });
+
+                // Edge to its Meta Node
+                edges.add({
+                    from: `meta_${metaOfParent[i]}`,
+                    to: `parent_${i}`,
+                    color: { color: '#475569', opacity: 0.3 },
+                    width: 1
+                });
+            }
+
+            // 3. Add Parent-Parent Lateral Edges
+            const lateralEdges = data.lateral_edges;
+            for (const [pId, neighbors] of Object.entries(lateralEdges)) {
+                neighbors.forEach(neighbor => {
+                    if (parseInt(pId) < neighbor) { // Avoid duplicate undirected edges
+                        edges.add({
+                            from: `parent_${pId}`,
+                            to: `parent_${neighbor}`,
+                            color: { color: '#38bdf8', opacity: 0.5 },
+                            dashes: true,
+                            width: 2
+                        });
+                    }
+                });
+            }
+
+            // Note: We don't render leaves by default to avoid performance issues
+            // They will be loaded or highlighted on interaction if needed.
+
+            const container = document.getElementById('network');
+            const networkData = { nodes, edges };
+            const options = {
+                nodes: {
+                    borderWidth: 2,
+                    scaling: { min: 10, max: 30 }
+                },
+                edges: {
+                    smooth: { type: 'continuous' }
+                },
+                physics: {
+                    forceAtlas2Based: {
+                        gravitationalConstant: -50,
+                        centralGravity: 0.01,
+                        springLength: 100,
+                        springConstant: 0.08
+                    },
+                    maxVelocity: 50,
+                    solver: 'forceAtlas2Based',
+                    timestep: 0.35,
+                    stabilization: { iterations: 150 }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 200
+                }
+            };
+
+            network = new vis.Network(container, networkData, options);
+
+            // Disable physics after initial layout is stable
+            network.once("stabilizationIterationsDone", function () {
+                network.setOptions({ physics: false });
+                console.log("Graph stabilized. Physics disabled.");
+            });
+
+            // Double click handler
+            network.on("doubleClick", function (params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    showNodeDetails(nodeId);
+                }
+            });
+        }
+
+        function showNodeDetails(nodeId) {
+            const nodeInfo = document.getElementById('node-info');
+            const emptyDetails = document.getElementById('empty-details');
+            
+            emptyDetails.style.display = 'none';
+            nodeInfo.style.display = 'block';
+
+            if (nodeId.startsWith('meta_')) {
+                const idx = nodeId.split('_')[1];
+                document.getElementById('val-type').textContent = 'META NODE';
+                document.getElementById('val-id').textContent = idx;
+                document.getElementById('val-text').textContent = "This is a high-level topic cluster (Meta Node). It groups related parent clusters.";
+                document.getElementById('meta-block').style.display = 'none';
+            } 
+            else if (nodeId.startsWith('parent_')) {
+                const idx = nodeId.split('_')[1];
+                document.getElementById('val-type').textContent = 'PARENT NODE (Cluster)';
+                document.getElementById('val-id').textContent = idx;
+                
+                // Count leaves
+                const leaves = currentGraphData.parent_of_leaf.filter(p => p == idx).length;
+                document.getElementById('val-text').textContent = `This cluster contains ${leaves} leaf nodes (chunks). It represents a localized semantic neighborhood.`;
+                document.getElementById('meta-block').style.display = 'none';
+                
+                // Option to show leaves?
+                const btn = document.createElement('button');
+                btn.textContent = "Show Chunks (Leaves)";
+                btn.style.marginTop = "10px";
+                btn.style.padding = "5px 10px";
+                btn.style.background = "var(--leaf-color)";
+                btn.style.border = "none";
+                btn.style.borderRadius = "4px";
+                btn.style.color = "white";
+                btn.style.cursor = "pointer";
+                btn.onclick = () => showLeavesForParent(idx);
+                document.getElementById('val-text').appendChild(document.createElement('br'));
+                document.getElementById('val-text').appendChild(btn);
+            }
+            else if (nodeId.startsWith('leaf_')) {
+                const idx = nodeId.split('_')[1];
+                const meta = currentGraphData.leaf_meta[idx];
+                document.getElementById('val-type').textContent = 'LEAF NODE (Text Chunk)';
+                document.getElementById('val-id').textContent = meta.chunk_id;
+                document.getElementById('val-text').textContent = meta.text;
+                document.getElementById('meta-block').style.display = 'block';
+                document.getElementById('val-meta').textContent = `Document: ${meta.filename}\nPage: ${meta.page}`;
+            }
+        }
+
+        function showLeavesForParent(parentId) {
+            const nodes = network.body.data.nodes;
+            const edges = network.body.data.edges;
+
+            // Find leaves for this parent
+            const leafIndices = [];
+            currentGraphData.parent_of_leaf.forEach((p, idx) => {
+                if (p == parentId) leafIndices.push(idx);
+            });
+
+            // Limit leaves to avoid crash if too many
+            const limit = 20;
+            const displayIndices = leafIndices.slice(0, limit);
+
+            displayIndices.forEach(idx => {
+                const lId = `leaf_${idx}`;
+                if (!nodes.get(lId)) {
+                    const meta = currentGraphData.leaf_meta[idx];
+                    nodes.add({
+                        id: lId,
+                        label: `L${idx}`,
+                        color: { background: '#10b981', border: '#059669' },
+                        font: { color: '#fff' },
+                        size: 12,
+                        shape: 'dot',
+                        type: 'Leaf'
+                    });
+                    edges.add({
+                        from: `parent_${parentId}`,
+                        to: lId,
+                        color: { color: '#10b981', opacity: 0.4 }
+                    });
+                }
+            });
+
+            if (leafIndices.length > limit) {
+                alert(`Showing ${limit} of ${leafIndices.length} leaves for this parent to preserve performance.`);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -38,6 +38,8 @@ class RagSettings(BaseSettings):
     KAFKA_RESPONSE_TOPIC: str = "question-responses"
     KAFKA_ERROR_TOPIC: str = "question-errors"
     KAFKA_DELETE_TOPIC: str = "document-deletions"
+    KAFKA_EDAG_BUILD_TOPIC: str = "edag.build.requested"
+    KAFKA_EDAG_COMPLETED_TOPIC: str = "edag.build.completed"
 
     # ── Search ───────────────────────────────────────────────────────────
     TOP_K_RESULTS: int = 30

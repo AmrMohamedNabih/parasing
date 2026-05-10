@@ -13,6 +13,7 @@ Design decisions:
 """
 
 import asyncio
+import json
 import logging
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -21,10 +22,11 @@ from functools import partial
 from pathlib import Path
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.document import Document, DocumentPage, DocumentStatus, TextBlock
+from app.db.models.subject import Subject
 
 # Import the core 7-stage pipeline from project root
 import sys
@@ -99,6 +101,13 @@ class ParsingService:
                 f"[{document_id}] Status → DONE | "
                 f"pages={doc.total_pages} blocks={doc.total_blocks} "
                 f"confidence={doc.avg_confidence:.2f}"
+            )
+
+            # 6. Fire EDAG build trigger (fire-and-forget, never raises)
+            await maybe_trigger_edag_build(
+                subject_id=str(doc.subject_id),
+                user_id=str(doc.user_id),
+                db=db,
             )
 
         except Exception as e:
@@ -194,7 +203,7 @@ class ParsingService:
                     document_id=doc.id,
                     user_id=doc.user_id,
                     block_id=chunk.chunk_id,
-                    text=chunk.text,
+                    text=chunk.text.replace("\x00", ""), # Fix: Strip null bytes for PG compatibility
                     direction=chunk.direction.value,
                     rtl_ratio=0.0,
                     confidence=round(chunk.confidence, 4),
@@ -214,3 +223,110 @@ class ParsingService:
         # Single commit for the whole document
         await db.commit()
         logger.debug(f"Persisted {result.total_pages} pages, {result.total_blocks} blocks")
+
+
+# ── EDAG Build Trigger ────────────────────────────────────────────────────────
+
+MIN_CHUNKS_FOR_EDAG = 100
+
+
+async def maybe_trigger_edag_build(
+    subject_id: str,
+    user_id: str,
+    db: AsyncSession,
+) -> None:
+    """
+    After a document finishes processing, check if the subject has crossed
+    MIN_CHUNKS_FOR_EDAG. If so and no build is in progress, publish a
+    'edag.build.requested' Kafka message and mark edag_status='building'.
+
+    Uses a one-shot aiokafka producer (start → send → stop).
+    Wrapped in try/except so failures never affect the main pipeline.
+    """
+    import os
+    try:
+        from sqlalchemy import func, update
+        from app.db.models.document import TextBlock
+
+        # Count total embedded (or pending) chunks for this subject
+        chunk_count_result = await db.execute(
+            select(func.count(TextBlock.id)).where(
+                TextBlock.page_id.in_(
+                    select(TextBlock.page_id).join(
+                        Document, Document.id == TextBlock.document_id
+                    ).where(Document.subject_id == uuid.UUID(subject_id))
+                )
+            )
+        )
+        # Simpler: count text_blocks where document belongs to subject
+        chunk_count_result = await db.execute(
+            select(func.count(TextBlock.id))
+            .join(Document, Document.id == TextBlock.document_id)
+            .where(Document.subject_id == uuid.UUID(subject_id))
+        )
+        chunk_count = chunk_count_result.scalar() or 0
+
+        logger.info(
+            "[EDAG] Subject %s has %d total chunks (threshold=%d)",
+            subject_id, chunk_count, MIN_CHUNKS_FOR_EDAG
+        )
+
+        if chunk_count < MIN_CHUNKS_FOR_EDAG:
+            return
+
+        # Check current edag_status — skip if already building or ready
+        subject_result = await db.execute(
+            select(Subject).where(Subject.id == uuid.UUID(subject_id))
+        )
+        subject = subject_result.scalar_one_or_none()
+        if subject is None:
+            return
+
+        if subject.edag_status in ("building", "ready"):
+            logger.info(
+                "[EDAG] Subject %s edag_status='%s' — skipping trigger",
+                subject_id, subject.edag_status
+            )
+            return
+
+        # Mark as building
+        subject.edag_status = "building"
+        await db.commit()
+        logger.info("[EDAG] Subject %s edag_status → 'building'", subject_id)
+
+        # Fire Kafka message via one-shot producer
+        kafka_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "127.0.0.1:9094")
+        try:
+            from aiokafka import AIOKafkaProducer
+            producer = AIOKafkaProducer(
+                bootstrap_servers=kafka_servers,
+                value_serializer=lambda v: json.dumps(v).encode(),
+            )
+            await producer.start()
+            try:
+                await producer.send(
+                    "edag.build.requested",
+                    {
+                        "subject_id": subject_id,
+                        "user_id": user_id,
+                        "triggered_at": datetime.utcnow().isoformat(),
+                    },
+                )
+                logger.info(
+                    "[EDAG] Published edag.build.requested for subject=%s", subject_id
+                )
+            finally:
+                await producer.stop()
+        except Exception as kafka_exc:
+            logger.warning(
+                "[EDAG] Kafka publish failed for subject=%s: %s — "
+                "status will remain 'building' and retry on next document.",
+                subject_id, kafka_exc
+            )
+
+    except Exception as exc:
+        logger.warning(
+            "[EDAG] maybe_trigger_edag_build failed for subject=%s: %s",
+            subject_id, exc
+        )
+

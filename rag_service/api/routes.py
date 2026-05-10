@@ -12,6 +12,7 @@ import asyncio
 import json
 import logging
 import uuid
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
@@ -308,3 +309,93 @@ async def summarize(req: SummarizeRequest):
     new_summary = await generation_service.generate_updated_summary(req.history_text)
     logger.info("Summarize result: %s", new_summary[:50] + "..." if new_summary else "NONE")
     return {"updatedSummary": new_summary}
+
+
+class TestQueryRequest(BaseModel):
+    subject_id: str
+    question: str
+
+
+@router.post("/api/edag/test-query")
+async def test_edag_query(req: TestQueryRequest):
+    """
+    DEBUG ENDPOINT: Runs EDAG search for a question and returns
+    only the retrieved leaf indices and their scores.
+    """
+    from rag_service.services.embedding_service import embedding_service
+    from edag.edag_retriever import get_or_load_edag_retriever
+    import numpy as np
+
+    try:
+        # 1. Embed
+        q_vec = await embedding_service.encode_query(req.question)
+        q_vec_np = np.array(q_vec, dtype=np.float32)
+
+        # 2. Search
+        retriever = get_or_load_edag_retriever(req.subject_id)
+        results, trace = await retriever.search_async(q_vec_np, top_k=settings.TOP_K_RESULTS)
+
+        # 3. Map results back to indices for the visualizer
+        # We need to find the index of each leaf in the original list
+        indices = []
+        for res in results:
+            # Match by chunk_id
+            chunk_id = res.payload.get("text_block_id")
+            for idx, meta in enumerate(retriever._leaf_meta):
+                if meta.get("chunk_id") == chunk_id:
+                    indices.append({"index": idx, "score": res.score})
+                    break
+        
+        return {
+            "retrieved_indices": indices,
+            "trace": trace
+        }
+    except Exception as e:
+        logger.error("EDAG test query failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+# ── EDAG Visualization Endpoints ──────────────────────────────────────────────
+
+@router.get("/api/edag/subjects")
+async def list_edag_subjects():
+    """Returns list of subjects that have a 'ready' EDAG graph."""
+    from app.db.session import AsyncSessionFactory
+    from app.db.models.subject import Subject
+    from sqlalchemy import select
+
+    async with AsyncSessionFactory() as db:
+        result = await db.execute(
+            select(Subject.id, Subject.name, Subject.edag_leaf_count, Subject.edag_built_at)
+            .where(Subject.edag_status == "ready")
+        )
+        subjects = [
+            {
+                "id": str(row.id),
+                "name": row.name,
+                "leaf_count": row.edag_leaf_count,
+                "built_at": row.edag_built_at.isoformat() if row.edag_built_at else None,
+            }
+            for row in result
+        ]
+        return subjects
+
+
+@router.get("/api/edag/graph/{subject_id}")
+async def get_edag_graph(subject_id: str):
+    """Returns the graph.json for a specific subject."""
+    # edag_graphs is in the parent directory of rag_service (the 'parsing' root)
+    graph_path = Path(__file__).parent.parent.parent / "edag_graphs" / subject_id / "graph.json"
+    
+    if not graph_path.exists():
+        raise HTTPException(status_code=404, detail="EDAG graph not found for this subject.")
+    
+    try:
+        with open(graph_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data
+    except Exception as e:
+        logger.error("Failed to read EDAG graph for %s: %s", subject_id, e)
+        raise HTTPException(status_code=500, detail="Failed to load graph data.")
+
