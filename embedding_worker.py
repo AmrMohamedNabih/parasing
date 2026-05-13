@@ -15,6 +15,7 @@ Design decisions:
 """
 
 import asyncio
+import json
 import logging
 import os
 import signal
@@ -24,6 +25,7 @@ from functools import partial
 from pathlib import Path
 
 import asyncpg
+from aiokafka import AIOKafkaProducer
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from qdrant_client.http.exceptions import UnexpectedResponse
@@ -45,6 +47,8 @@ POLL_INTERVAL = 30          # seconds between polls
 FETCH_LIMIT = 64            # rows per DB fetch
 ENCODE_BATCH_SIZE = 32      # SentenceTransformer internal batch size
 MODEL_NAME = "microsoft/harrier-oss-v1-0.6b"
+KAFKA_BOOTSTRAP: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "127.0.0.1:9094")
+KAFKA_BUILD_TOPIC = "edag.build.requested"
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 
@@ -73,6 +77,7 @@ class EmbeddingWorker:
         self.model: SentenceTransformer | None = None
         self.qdrant: QdrantClient | None = None
         self.pool: asyncpg.Pool | None = None
+        self.producer: AIOKafkaProducer | None = None
 
     # ── Startup / shutdown ────────────────────────────────────────────────
 
@@ -96,10 +101,20 @@ class EmbeddingWorker:
         )
         logger.info("PostgreSQL pool ready.")
 
+        logger.info("Starting Kafka producer...")
+        self.producer = AIOKafkaProducer(
+            bootstrap_servers=KAFKA_BOOTSTRAP,
+            value_serializer=lambda v: json.dumps(v).encode(),
+        )
+        await self.producer.start()
+        logger.info("Kafka producer ready.")
+
     async def shutdown(self) -> None:
         logger.info("Shutting down...")
         if self.pool:
             await self.pool.close()
+        if self.producer:
+            await self.producer.stop()
         if self.qdrant:
             self.qdrant.close()
 
@@ -275,6 +290,18 @@ class EmbeddingWorker:
             doc_counts[key] = doc_counts.get(key, 0) + 1
         for doc_id, n in doc_counts.items():
             logger.info("Embedded %d blocks for document %s", n, doc_id)
+
+        # ── Trigger EDAG rebuild for all affected subjects ──
+        subject_ids = set(str(r["subject_id"]) for r in rows)
+        for sid in subject_ids:
+            try:
+                await self.producer.send(
+                    KAFKA_BUILD_TOPIC,
+                    {"subject_id": sid, "user_id": "embedding_worker"}
+                )
+                logger.info("Triggered EDAG rebuild for subject %s", sid)
+            except Exception as e:
+                logger.error("Failed to trigger EDAG rebuild for %s: %s", sid, e)
 
         return len(rows)
 

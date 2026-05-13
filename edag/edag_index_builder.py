@@ -133,117 +133,181 @@ def _fetch_vectors_from_qdrant(
 
 def _build_edag_sync(subject_id: str) -> dict:
     """
-    Synchronous build — runs in a thread executor to keep the consumer
-    event loop free. Returns a result dict with status and leaf_count.
+    Synchronous build wrapper. Decides between full and incremental build.
     """
     qdrant = QdrantClient(url=QDRANT_URL, timeout=120)
 
-    # Step 1-2: Fetch vectors directly from Qdrant (no re-embedding)
+    # 1. Fetch current vectors from Qdrant
     leaf_matrix_f32, leaf_meta = _fetch_vectors_from_qdrant(qdrant, subject_id)
     N = len(leaf_meta)
-
-    if N < MIN_CHUNKS:
+    
+    graph_dir = EDAG_GRAPHS_DIR / subject_id
+    graph_file = graph_dir / "graph.json"
+    
+    # Threshold logic: MIN_CHUNKS is for INITIAL build.
+    # Once a graph exists, any addition triggers an update.
+    has_graph = graph_file.exists()
+    
+    if not has_graph and N < MIN_CHUNKS:
         logger.warning(
-            "Subject %s has only %d chunks (< %d). Skipping build.",
+            "Subject %s has only %d chunks (< %d). Skipping initial build.",
             subject_id, N, MIN_CHUNKS
         )
         return {"status": "skipped_insufficient_chunks", "leaf_count": N}
 
-    # Step 3: Leaf matrix — float16 for storage, float32 for computation
+    if has_graph:
+        logger.info("Subject %s already has a graph. Performing INCREMENTAL update.", subject_id)
+        return _incremental_build_logic(subject_id, leaf_matrix_f32, leaf_meta)
+    else:
+        logger.info("Subject %s is new or graph missing. Performing FULL rebuild.", subject_id)
+        return _full_build_logic(subject_id, leaf_matrix_f32, leaf_meta)
+
+
+def _full_build_logic(subject_id: str, leaf_matrix_f32: np.ndarray, leaf_meta: list[dict]) -> dict:
+    """Original full build logic using KMeans."""
+    N = len(leaf_meta)
     leaf_matrix_f16 = leaf_matrix_f32.astype(np.float16)
 
-    # Step 4: Leaf-to-leaf edges (use float32 dot products even though storage is f16)
-    logger.info("Computing leaf-to-leaf edges (N=%d, TAU_LEAF=%.2f)...", N, TAU_LEAF)
+    # 1. Leaf-to-leaf edges
+    logger.info("Full Build: Computing leaf-to-leaf edges (N=%d)...", N)
     leaf_edges: dict[int, list[int]] = {}
-    # Compute in blocks to avoid O(N²) memory for large N
     block_size = 256
     for i in range(N):
         vi = leaf_matrix_f32[i]
         for j_start in range(i + 1, N, block_size):
             j_end = min(j_start + block_size, N)
             block = leaf_matrix_f32[j_start:j_end]
-            sims = block @ vi  # shape (block_size,)
+            sims = block @ vi
             for k, sim in enumerate(sims):
                 j = j_start + k
                 if float(sim) >= TAU_LEAF:
                     leaf_edges.setdefault(i, []).append(j)
                     leaf_edges.setdefault(j, []).append(i)
 
-    # Step 5: Cluster into KP parent clusters
+    # 2. Cluster into parents
     actual_kp = min(KP, N)
-    logger.info("Running MiniBatchKMeans(n_clusters=%d) for parents...", actual_kp)
-    try:
-        kmeans_p = MiniBatchKMeans(
-            n_clusters=actual_kp, random_state=42, max_iter=300, n_init=3
-        )
-        parent_labels: np.ndarray = kmeans_p.fit_predict(leaf_matrix_f32)
-    except Exception:
-        logger.warning("KMeans (parents) failed on first attempt, retrying max_iter=500...")
-        kmeans_p = MiniBatchKMeans(
-            n_clusters=actual_kp, random_state=42, max_iter=500, n_init=5
-        )
-        parent_labels = kmeans_p.fit_predict(leaf_matrix_f32)
+    logger.info("Full Build: Clustering %d parents...", actual_kp)
+    kmeans_p = MiniBatchKMeans(n_clusters=actual_kp, random_state=42, n_init=3)
+    parent_labels = kmeans_p.fit_predict(leaf_matrix_f32).tolist()
+    parent_centroids = normalize(kmeans_p.cluster_centers_.astype(np.float32), norm="l2").astype(np.float16)
 
-    # L2-normalize parent centroids
-    parent_centroids: np.ndarray = normalize(
-        kmeans_p.cluster_centers_.astype(np.float32), norm="l2"
-    ).astype(np.float16)
-
-
-    # Step 6: Lateral edges between parents
-    logger.info("Computing lateral edges between parents (TAU_LAT=%.2f)...", TAU_LAT)
-    parent_sims = parent_centroids @ parent_centroids.T  # (KP, KP)
-    lateral_edges: dict[int, list[int]] = {}
+    # 3. Lateral edges
+    parent_sims = parent_centroids.astype(np.float32) @ parent_centroids.astype(np.float32).T
+    lateral_edges = {}
     for i in range(actual_kp):
         for j in range(i + 1, actual_kp):
             if float(parent_sims[i, j]) >= TAU_LAT:
                 lateral_edges.setdefault(i, []).append(j)
                 lateral_edges.setdefault(j, []).append(i)
 
-    # Step 7: Cluster into KM meta clusters
+    # 4. Cluster into meta nodes
     actual_km = min(KM, actual_kp)
-    logger.info("Running MiniBatchKMeans(n_clusters=%d) for meta nodes...", actual_km)
-    try:
-        kmeans_m = MiniBatchKMeans(
-            n_clusters=actual_km, random_state=42, max_iter=300, n_init=3
-        )
-        meta_labels: np.ndarray = kmeans_m.fit_predict(parent_centroids)
-    except Exception:
-        logger.warning("KMeans (meta) failed on first attempt, retrying max_iter=500...")
-        kmeans_m = MiniBatchKMeans(
-            n_clusters=actual_km, random_state=42, max_iter=500, n_init=5
-        )
-        meta_labels = kmeans_m.fit_predict(parent_centroids)
+    logger.info("Full Build: Clustering %d meta nodes...", actual_km)
+    kmeans_m = MiniBatchKMeans(n_clusters=actual_km, random_state=42, n_init=3)
+    meta_labels = kmeans_m.fit_predict(parent_centroids.astype(np.float32)).tolist()
+    meta_centroids = normalize(kmeans_m.cluster_centers_.astype(np.float32), norm="l2").astype(np.float16)
 
-    # L2-normalize meta centroids
-    meta_centroids: np.ndarray = normalize(
-        kmeans_m.cluster_centers_.astype(np.float32), norm="l2"
-    ).astype(np.float16)
-
-
-    # Step 8: Serialize to disk
+    # Save
     graph_dir = EDAG_GRAPHS_DIR / subject_id
     graph_dir.mkdir(parents=True, exist_ok=True)
-
     np.save(str(graph_dir / "leaves.npy"), leaf_matrix_f16)
     np.save(str(graph_dir / "parents.npy"), parent_centroids)
     np.save(str(graph_dir / "metas.npy"), meta_centroids)
 
     graph_data = {
-        "parent_of_leaf":  parent_labels.tolist(),
-        "meta_of_parent":  meta_labels.tolist(),
-        "lateral_edges":   {str(k): v for k, v in lateral_edges.items()},
-        "leaf_edges":      {str(k): v for k, v in leaf_edges.items()},
-        "leaf_meta":       leaf_meta,
+        "parent_of_leaf": parent_labels,
+        "meta_of_parent": meta_labels,
+        "lateral_edges":  {str(k): v for k, v in lateral_edges.items()},
+        "leaf_edges":     {str(k): v for k, v in leaf_edges.items()},
+        "leaf_meta":      leaf_meta,
     }
     with open(graph_dir / "graph.json", "w", encoding="utf-8") as f:
         json.dump(graph_data, f, ensure_ascii=False)
 
-    logger.info(
-        "EDAG graph written to %s | leaves=%d parents=%d metas=%d",
-        graph_dir, N, actual_kp, actual_km
-    )
     return {"status": "success", "leaf_count": N}
+
+
+def _incremental_build_logic(subject_id: str, leaf_matrix_f32: np.ndarray, leaf_meta: list[dict]) -> dict:
+    """
+    Incremental build logic: assigns new chunks to nearest parents and 
+    updates centroids without full re-clustering.
+    """
+    graph_dir = EDAG_GRAPHS_DIR / subject_id
+    with open(graph_dir / "graph.json", "r", encoding="utf-8") as f:
+        graph = json.load(f)
+    
+    parent_centroids = np.load(str(graph_dir / "parents.npy")).astype(np.float32)
+    meta_centroids = np.load(str(graph_dir / "metas.npy")).astype(np.float32)
+    
+    existing_ids = {m["chunk_id"] for m in graph["leaf_meta"]}
+    new_indices = [i for i, m in enumerate(leaf_meta) if m["chunk_id"] not in existing_ids]
+    
+    if not new_indices:
+        logger.info("Incremental: No new chunks found for %s.", subject_id)
+        return {"status": "success", "leaf_count": len(leaf_meta), "note": "no new chunks"}
+
+    logger.info("Incremental: Adding %d new chunks to graph %s", len(new_indices), subject_id)
+
+    parent_of_leaf = graph["parent_of_leaf"]
+    meta_of_parent = graph["meta_of_parent"]
+    
+    # 1. Assign new chunks to nearest existing parents
+    for i in new_indices:
+        vec = leaf_matrix_f32[i]
+        # Cosine similarity to all parent centroids
+        scores = parent_centroids @ vec
+        p_id = int(np.argmax(scores))
+        
+        # Incremental centroid update (weighted mean)
+        count = parent_of_leaf.count(p_id)
+        parent_centroids[p_id] = (parent_centroids[p_id] * count + vec) / (count + 1)
+        parent_centroids[p_id] /= (np.linalg.norm(parent_centroids[p_id]) + 1e-9)
+        
+        parent_of_leaf.append(p_id)
+
+    # 2. Re-calculate meta centroids from updated parent centroids
+    for m_id in range(len(meta_centroids)):
+        child_parents = [j for j, m in enumerate(meta_of_parent) if m == m_id]
+        if child_parents:
+            new_meta_vec = np.mean(parent_centroids[child_parents], axis=0)
+            meta_centroids[m_id] = new_meta_vec / (np.linalg.norm(new_meta_vec) + 1e-9)
+
+    # 3. Re-calculate lateral edges (parent similarity changed)
+    parent_sims = parent_centroids @ parent_centroids.T
+    lateral_edges = {}
+    actual_kp = len(parent_centroids)
+    for i in range(actual_kp):
+        for j in range(i + 1, actual_kp):
+            if float(parent_sims[i, j]) >= TAU_LAT:
+                lateral_edges.setdefault(i, []).append(j)
+                lateral_edges.setdefault(j, []).append(i)
+
+    # 4. Update leaf edges (only for new leaves + their neighbors)
+    leaf_edges = {int(k): v for k, v in graph.get("leaf_edges", {}).items()}
+    for i in new_indices:
+        vi = leaf_matrix_f32[i]
+        sims = leaf_matrix_f32 @ vi
+        for j, sim in enumerate(sims):
+            if i != j and float(sim) >= TAU_LEAF:
+                leaf_edges.setdefault(i, []).append(j)
+                leaf_edges.setdefault(j, []).append(i)
+
+    # Save
+    np.save(str(graph_dir / "leaves.npy"), leaf_matrix_f32.astype(np.float16))
+    np.save(str(graph_dir / "parents.npy"), parent_centroids.astype(np.float16))
+    np.save(str(graph_dir / "metas.npy"), meta_centroids.astype(np.float16))
+    
+    new_graph_data = {
+        "parent_of_leaf": parent_of_leaf,
+        "meta_of_parent": meta_of_parent,
+        "lateral_edges": {str(k): v for k, v in lateral_edges.items()},
+        "leaf_edges": {str(k): v for k, v in leaf_edges.items()},
+        "leaf_meta": leaf_meta,
+    }
+    with open(graph_dir / "graph.json", "w", encoding="utf-8") as f:
+        json.dump(new_graph_data, f, ensure_ascii=False)
+        
+    return {"status": "success", "leaf_count": len(leaf_meta), "incremental": True}
 
 
 # ── DB helpers ────────────────────────────────────────────────────────────────
@@ -270,7 +334,7 @@ async def _update_subject_status(
             "UPDATE subjects SET edag_status = $1 WHERE id = $2::uuid",
             status, subject_id,
         )
-    logger.info("subjects.edag_status → '%s' for %s", status, subject_id)
+    logger.info("subjects.edag_status \u2192 '%s' for %s", status, subject_id)
 
 
 # ── Kafka publish helper ──────────────────────────────────────────────────────
@@ -344,7 +408,7 @@ async def run_builder() -> None:
             subject_id = data.get("subject_id", "")
             user_id = data.get("user_id", "")
             logger.info(
-                "Build requested — subject=%s user=%s", subject_id, user_id
+                "Build requested \u2014 subject=%s user=%s", subject_id, user_id
             )
 
             try:
@@ -392,7 +456,7 @@ async def main() -> None:
 
     def _handle_signal(signum, frame):
         global _shutdown
-        logger.info("Signal %s received — shutting down.", signum)
+        logger.info("Signal %s received \u2014 shutting down.", signum)
         _shutdown = True
 
     signal.signal(signal.SIGTERM, _handle_signal)

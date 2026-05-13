@@ -133,6 +133,40 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Toast Notification */
+        #toast-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-color);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            font-size: 0.9rem;
+            min-width: 350px;
+            max-width: 500px;
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+            background: rgba(30, 41, 59, 0.9);
+        }
+        .toast.error { border-left-color: #ef4444; }
+        .toast.success { border-left-color: #10b981; }
+        @keyframes slideUp { from { transform: translate(-50%, 100%); opacity: 0; } to { transform: translate(0, 0); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -205,6 +239,8 @@
         </div>
     </div>
 
+    <div id="toast-container"></div>
+
     <script>
         const API_BASE = "http://localhost:8001"; // RAG Service
         let network = null;
@@ -212,6 +248,30 @@
         let edges = null;
         let currentGraphData = null;
         let highlightedNodes = [];
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            
+            // Prevent duplicate messages from stacking
+            const existingToasts = Array.from(container.children);
+            if (existingToasts.some(t => t.innerText.includes(message))) return;
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span style="flex-grow:1;">${message}</span>
+                <button onclick="this.parentElement.remove()" style="background:none; border:none; color:#94a3b8; cursor:pointer; margin-left:15px; font-size:1.5rem; line-height:1;">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(10px)';
+                    toast.style.transition = 'all 0.5s ease';
+                    setTimeout(() => toast.remove(), 500);
+                }
+            }, 6000);
+        }
 
         // Initialize
         async function init() {
@@ -245,7 +305,7 @@
 
             } catch (err) {
                 console.error("Failed to load subjects:", err);
-                alert("Could not connect to RAG service at " + API_BASE);
+                showToast("Could not connect to RAG service at " + API_BASE, "error");
             }
         }
 
@@ -259,10 +319,10 @@
             try {
                 const response = await fetch(`${API_BASE}/api/edag/rebuild/${subjectId}`, { method: 'POST' });
                 const data = await response.json();
-                alert("Build requested! Please wait a few moments for the graph to be generated, then refresh this subject.");
+                showToast("Build requested! Please wait for the graph to regenerate.", "success");
             } catch (err) {
                 console.error("Rebuild failed:", err);
-                alert("Failed to trigger rebuild.");
+                showToast("Failed to trigger rebuild.", "error");
             } finally {
                 document.getElementById('loader').style.display = 'none';
             }
@@ -273,7 +333,7 @@
             const question = document.getElementById('query-input').value;
 
             if (!subjectId || !question) {
-                alert("Please select a subject and enter a question.");
+                showToast("Please select a subject and enter a question.", "error");
                 return;
             }
 
@@ -292,7 +352,7 @@
                 
             } catch (err) {
                 console.error("Query failed:", err);
-                alert("Test query failed.");
+                showToast("Test query failed.", "error");
             } finally {
                 document.getElementById('loader').style.display = 'none';
             }
@@ -364,14 +424,15 @@
             const resultIds = [];
             const maxScore = Math.max(...results.map(r => r.score));
 
+            const uniqueParents = [...new Set(results.map(r => currentGraphData.parent_of_leaf[r.index]))];
+            uniqueParents.forEach(pid => showLeavesForParent(pid));
+
             results.sort((a, b) => b.score - a.score).forEach(res => {
                 const parentId = currentGraphData.parent_of_leaf[res.index];
                 const leafId = `leaf_${res.index}`;
                 const meta = currentGraphData.leaf_meta[res.index];
                 
                 const relativeScore = ((res.score / maxScore) * 100).toFixed(0);
-
-                showLeavesForParent(parentId);
 
                 nodes.update({
                     id: leafId,
@@ -425,7 +486,7 @@
                 renderGraph(data);
             } catch (err) {
                 console.error("Failed to load graph:", err);
-                alert("Error loading graph data: " + err.message);
+                showToast("Error loading graph data: " + err.message, "error");
             } finally {
                 document.getElementById('loader').style.display = 'none';
             }
@@ -590,6 +651,12 @@
         function showLeavesForParent(parentId) {
             const nodes = network.body.data.nodes;
             const edges = network.body.data.edges;
+            
+            const parentIdStr = `parent_${parentId}`;
+            const parentPos = network.getPositions([parentIdStr])[parentIdStr];
+
+            // Re-enable physics briefly to let new nodes "explode" out from the parent
+            network.setOptions({ physics: { enabled: true } });
 
             // Find leaves for this parent
             const leafIndices = [];
@@ -598,7 +665,7 @@
             });
 
             // Limit leaves to avoid crash if too many
-            const limit = 20;
+            const limit = 40;
             const displayIndices = leafIndices.slice(0, limit);
 
             displayIndices.forEach(idx => {
@@ -612,10 +679,13 @@
                         font: { color: '#fff' },
                         size: 12,
                         shape: 'dot',
-                        type: 'Leaf'
+                        type: 'Leaf',
+                        // Start near parent for smooth "pop-out" effect
+                        x: parentPos ? parentPos.x + (Math.random() - 0.5) * 10 : undefined,
+                        y: parentPos ? parentPos.y + (Math.random() - 0.5) * 10 : undefined
                     });
                     edges.add({
-                        from: `parent_${parentId}`,
+                        from: parentIdStr,
                         to: lId,
                         color: { color: '#10b981', opacity: 0.4 }
                     });
@@ -623,8 +693,13 @@
             });
 
             if (leafIndices.length > limit) {
-                alert(`Showing ${limit} of ${leafIndices.length} leaves for this parent to preserve performance.`);
+                showToast(`Showing ${limit} of ${leafIndices.length} leaves for this parent to preserve performance.`, "info");
             }
+
+            // Disable physics again after they've had a chance to spread out
+            setTimeout(() => {
+                network.setOptions({ physics: { enabled: false } });
+            }, 3000);
         }
 
         init();
