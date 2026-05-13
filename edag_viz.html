@@ -362,10 +362,14 @@
             }
 
             const resultIds = [];
+            const maxScore = Math.max(...results.map(r => r.score));
+
             results.sort((a, b) => b.score - a.score).forEach(res => {
                 const parentId = currentGraphData.parent_of_leaf[res.index];
                 const leafId = `leaf_${res.index}`;
                 const meta = currentGraphData.leaf_meta[res.index];
+                
+                const relativeScore = ((res.score / maxScore) * 100).toFixed(0);
 
                 showLeavesForParent(parentId);
 
@@ -382,7 +386,10 @@
                 div.className = 'result-item';
                 div.onclick = () => focusNode(leafId);
                 div.innerHTML = `
-                    <div class="result-score">Score: ${(res.score * 100).toFixed(1)}%</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="result-score" style="color: #94a3b8; font-weight: normal;">EDAG Score: <span style="color: var(--accent-color); font-weight: bold;">${res.score.toFixed(3)}</span></div>
+                        <div style="font-size: 0.7rem; color: #38bdf8; background: rgba(56, 189, 248, 0.1); padding: 2px 6px; border-radius: 10px; font-weight: bold;">${relativeScore}% Match</div>
+                    </div>
                     <div class="result-meta">Page ${meta.page} | ${meta.filename}</div>
                     <div class="result-text">${meta.text}</div>
                 `;

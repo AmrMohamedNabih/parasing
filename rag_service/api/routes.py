@@ -213,6 +213,7 @@ async def ask_question(req: AskRequest) -> AskResponse:
                     # If global search, ignore specific document_ids to search the whole subject
                     document_ids=req.document_ids if not req.global_search else None,
                     top_k=req.top_k, # Now handled dynamically in search_service
+                    use_edag=req.global_search,
                 )
         else:
             logger.info("No documents or global search requested. Skipping retrieval.")

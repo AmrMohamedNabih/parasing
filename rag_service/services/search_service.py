@@ -73,7 +73,7 @@ class SearchService:
                         results, trace = await retriever.search_async(q_vec, top_k=top_k)
                         
                         # Continue to post-processing (RTL detection, filenames)
-                        return await self._post_process_results(results)
+                        return await self._post_process_results(results, is_edag=True)
             except Exception as e:
                 logger.error("[EDAG] Failed to route via EDAG, falling back to Qdrant: %s", e)
 
@@ -115,21 +115,18 @@ class SearchService:
 
         logger.info("QDRANT RETURNED %d points", len(results))
 
-        return await self._post_process_results(results)
+        return await self._post_process_results(results, is_edag=False)
 
-        # ── Resolve filenames from PostgreSQL ──
-        await self._resolve_filenames(results)
-
-        return results, majority_rtl
-
-    async def _post_process_results(self, results: list) -> tuple[list, bool]:
+    async def _post_process_results(self, results: list, is_edag: bool = False) -> tuple[list, bool]:
         """Shared post-processing for both Qdrant and EDAG paths."""
         if not results:
             return [], False
 
         # ── Dynamic Similarity Filtering ──────────────────────────────────────
         top_score = results[0].score
-        dynamic_threshold = max(settings.SIMILARITY_THRESHOLD, top_score - 0.07)
+        base_threshold = 0.20 if is_edag else settings.SIMILARITY_THRESHOLD
+        margin = 0.15 if is_edag else 0.07
+        dynamic_threshold = max(base_threshold, top_score - margin)
         
         original_count = len(results)
         results = [p for p in results if p.score >= dynamic_threshold]
