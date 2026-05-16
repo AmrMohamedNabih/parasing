@@ -20,3 +20,8 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+
+rag_service.log
+
+
