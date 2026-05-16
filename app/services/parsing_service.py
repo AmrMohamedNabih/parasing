@@ -90,11 +90,14 @@ class ParsingService:
                 final_chunks_by_page=final_chunks_by_page
             )
 
+            # Calculate actual number of persisted blocks (semantic chunks)
+            actual_total_blocks = sum(len(chunks) for chunks in final_chunks_by_page.values())
+
             # 5. Mark as DONE
             doc.status = DocumentStatus.DONE.value
             doc.processed_at = datetime.now(timezone.utc)
             doc.total_pages = extraction_result.total_pages
-            doc.total_blocks = extraction_result.total_blocks
+            doc.total_blocks = actual_total_blocks
             doc.avg_confidence = round(extraction_result.avg_confidence, 4)
             await db.commit()
             logger.info(

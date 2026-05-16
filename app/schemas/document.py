@@ -114,3 +114,29 @@ class DocumentListItem(BaseModel):
     processed_at: datetime | None
 
     model_config = {"from_attributes": True}
+
+
+class DocumentProcessingStatusItem(BaseModel):
+    """
+    Detailed processing status for a single document.
+    Returned as part of the batch-status response.
+
+    Phases:
+        - document_status: pending | processing | done | failed
+        - embedding_phase: not_started | in_progress | complete
+        - is_ready: true only when document is fully parsed AND all blocks embedded
+    """
+
+    document_id: uuid.UUID
+    document_status: str           # pending | processing | done | failed
+    embedding_phase: str           # not_started | in_progress | complete
+    total_blocks: int              # 0 while parsing, filled after DONE
+    embedded_blocks: int           # blocks with embedded_at IS NOT NULL
+    error_message: str | None
+    is_ready: bool                 # safe to use in chat
+
+
+class BatchProcessingStatusResponse(BaseModel):
+    """Response for GET /api/v1/documents/batch-status"""
+
+    statuses: list[DocumentProcessingStatusItem]

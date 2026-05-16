@@ -25,12 +25,127 @@ from app.schemas.document import (
     DocumentPageResponse,
     DocumentStatusResponse,
     DocumentUploadResponse,
+    DocumentProcessingStatusItem,
+    BatchProcessingStatusResponse,
 )
 from app.services.storage_service import storage_service
 from app.workers.parsing_worker import run_parsing_job
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+# ============================================================
+# GET /documents/batch-status  — Batch embedding/parsing status
+# ============================================================
+
+@router.get(
+    "/batch-status",
+    response_model=BatchProcessingStatusResponse,
+    summary="Get detailed processing status for multiple documents",
+    description=(
+        "Returns the parsing + embedding phase for each requested document. "
+        "Use this to know when a document is truly ready for RAG queries."
+    ),
+)
+async def get_batch_processing_status(
+    document_ids: str,   # comma-separated UUIDs
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> BatchProcessingStatusResponse:
+    """
+    Accepts ?document_ids=uuid1,uuid2,... and returns a status item for each.
+
+    Embedding progress is derived from counting text_blocks WHERE embedded_at IS NOT NULL
+    vs total text_blocks for the document. This is the ground truth since the embedding
+    worker only sets embedded_at after successfully pushing to Qdrant.
+    """
+    from sqlalchemy import func as sa_func
+
+    # Parse and validate UUIDs — skip malformed ones gracefully
+    raw_ids = [s.strip() for s in document_ids.split(",") if s.strip()]
+    parsed_ids: list[uuid.UUID] = []
+    for raw in raw_ids:
+        try:
+            parsed_ids.append(uuid.UUID(raw))
+        except ValueError:
+            logger.warning("batch-status: skipping invalid UUID '%s'", raw)
+
+    if not parsed_ids:
+        return BatchProcessingStatusResponse(statuses=[])
+
+    # 1. Fetch all requested documents in one query
+    docs_result = await db.execute(
+        select(Document).where(Document.id.in_(parsed_ids))
+    )
+    docs = {doc.id: doc for doc in docs_result.scalars().all()}
+
+    # 2. Count embedded blocks per document in one query
+    embedded_counts_result = await db.execute(
+        select(
+            TextBlock.document_id,
+            sa_func.count(TextBlock.id).label("embedded_count"),
+        )
+        .where(
+            TextBlock.document_id.in_(parsed_ids),
+            TextBlock.embedded_at.isnot(None),
+        )
+        .group_by(TextBlock.document_id)
+    )
+    embedded_counts: dict[uuid.UUID, int] = {
+        row.document_id: row.embedded_count for row in embedded_counts_result
+    }
+
+    # 3. Build response items
+    statuses: list[DocumentProcessingStatusItem] = []
+    for doc_id in parsed_ids:
+        doc = docs.get(doc_id)
+        if doc is None:
+            # Document not found in parsing DB — still pending upload
+            statuses.append(DocumentProcessingStatusItem(
+                document_id=doc_id,
+                document_status="pending",
+                embedding_phase="not_started",
+                total_blocks=0,
+                embedded_blocks=0,
+                error_message=None,
+                is_ready=False,
+            ))
+            continue
+
+        total_blocks = doc.total_blocks or 0
+        embedded = embedded_counts.get(doc_id, 0)
+        doc_status = doc.status  # pending | processing | done | failed
+
+        # Derive embedding phase
+        if doc_status == DocumentStatus.FAILED.value:
+            embedding_phase = "not_started"
+            is_ready = False
+        elif doc_status != DocumentStatus.DONE.value:
+            # Still parsing — embedding hasn't started
+            embedding_phase = "not_started"
+            is_ready = False
+        elif total_blocks == 0:
+            # Parsed but no blocks yet (very unlikely edge case)
+            embedding_phase = "in_progress"
+            is_ready = False
+        elif embedded >= total_blocks:
+            embedding_phase = "complete"
+            is_ready = True
+        else:
+            embedding_phase = "in_progress"
+            is_ready = False
+
+        statuses.append(DocumentProcessingStatusItem(
+            document_id=doc_id,
+            document_status=doc_status,
+            embedding_phase=embedding_phase,
+            total_blocks=total_blocks,
+            embedded_blocks=embedded,
+            error_message=doc.error_message,
+            is_ready=is_ready,
+        ))
+
+    return BatchProcessingStatusResponse(statuses=statuses)
 
 # The maximum PDF size accepted (100 MB)
 MAX_PDF_SIZE_BYTES = 100 * 1024 * 1024
