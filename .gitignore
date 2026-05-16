@@ -3,6 +3,10 @@ venv/
 .venv/
 env/
 .env
+.qdrant_storage/
+.qdrant_storage/*
+qdrant_storage/
+qdrant_storage/*
 
 # Python
 __pycache__/
