@@ -124,7 +124,7 @@ class SearchService:
 
         # ── Dynamic Similarity Filtering ──────────────────────────────────────
         top_score = results[0].score
-        base_threshold = 0.20 if is_edag else settings.SIMILARITY_THRESHOLD
+        base_threshold = settings.SIMILARITY_THRESHOLD  # Use unified threshold from config
         margin = 0.15 if is_edag else 0.07
         dynamic_threshold = max(base_threshold, top_score - margin)
         

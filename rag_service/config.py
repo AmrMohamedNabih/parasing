@@ -43,7 +43,7 @@ class RagSettings(BaseSettings):
 
     # ── Search ───────────────────────────────────────────────────────────
     TOP_K_RESULTS: int = 30
-    SIMILARITY_THRESHOLD: float = 0.55   # tuned for e5-small cosine scores
+    SIMILARITY_THRESHOLD: float = 0.20   # tuned for e5-small cosine scores (matches EDAG base)
 
     model_config = {
         "env_file": ".env",

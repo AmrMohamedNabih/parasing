@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     # Search
     TOP_K_RESULTS: int = 8
-    SIMILARITY_THRESHOLD: float = 0.55
+    SIMILARITY_THRESHOLD: float = 0.20
 
     model_config = {
         "env_file": ".env",
