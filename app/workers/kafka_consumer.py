@@ -3,7 +3,7 @@ import json
 import logging
 import uuid
 
-from aiokafka import AIOKafkaConsumer
+from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from sqlalchemy import select, delete
 
 from app.core.config import settings
@@ -85,7 +85,7 @@ async def _get_or_create_subject(
     return subject
 
 
-async def _handle_document_deletion(event: dict):
+async def _handle_document_deletion(event: dict, producer: AIOKafkaProducer):
     """
     Cleans up all traces of a document from PostgreSQL, Qdrant, and local storage.
     """
@@ -113,6 +113,16 @@ async def _handle_document_deletion(event: dict):
 
         logger.info(f"Global cleanup complete for document {document_id}")
 
+        # 4. Trigger EDAG rebuild/cleanup
+        try:
+            await producer.send(
+                settings.KAFKA_EDAG_BUILD_TOPIC,
+                {"subject_id": str(subject_id), "user_id": str(user_id)}
+            )
+            logger.info(f"Triggered EDAG rebuild for subject {subject_id} after deletion")
+        except Exception as pe:
+            logger.error(f"Failed to trigger EDAG rebuild for subject {subject_id}: {pe}")
+
     except Exception as e:
         logger.error(f"Failed to handle document deletion for {event}: {e}", exc_info=True)
 
@@ -129,16 +139,22 @@ async def consume_document_events():
         value_deserializer=lambda v: json.loads(v.decode('utf-8'))
     )
 
+    producer = AIOKafkaProducer(
+        bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
+        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+    )
+
     for _ in range(5):
         try:
             await consumer.start()
-            logger.info("Kafka consumer connected successfully.")
+            await producer.start()
+            logger.info("Kafka consumer and producer connected successfully.")
             break
         except Exception as e:
-            logger.warning(f"Kafka consumer start failed: {e}. Retrying in 5 seconds...")
+            logger.warning(f"Kafka start failed: {e}. Retrying in 5 seconds...")
             await asyncio.sleep(5)
     else:
-        logger.error("Failed to start Kafka consumer after 5 retries. Exiting consumer loop.")
+        logger.error("Failed to start Kafka components after 5 retries. Exiting.")
         return
 
     try:
@@ -148,7 +164,7 @@ async def consume_document_events():
 
             try:
                 if msg.topic == settings.KAFKA_DELETE_TOPIC:
-                    await _handle_document_deletion(event)
+                    await _handle_document_deletion(event, producer)
                     continue
 
                 document_id = uuid.UUID(event['documentId'])
@@ -198,3 +214,4 @@ async def consume_document_events():
 
     finally:
         await consumer.stop()
+        await producer.stop()

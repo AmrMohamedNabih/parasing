@@ -21,6 +21,7 @@ import asyncio
 import json
 import logging
 import os
+import shutil
 import signal
 from datetime import datetime
 from pathlib import Path
@@ -140,25 +141,29 @@ def _build_edag_sync(subject_id: str) -> dict:
     # 1. Fetch current vectors from Qdrant
     leaf_matrix_f32, leaf_meta = _fetch_vectors_from_qdrant(qdrant, subject_id)
     N = len(leaf_meta)
-    
     graph_dir = EDAG_GRAPHS_DIR / subject_id
     graph_file = graph_dir / "graph.json"
-    
-    # Threshold logic: MIN_CHUNKS is for INITIAL build.
-    # Once a graph exists, any addition triggers an update.
     has_graph = graph_file.exists()
-    
-    if not has_graph and N < MIN_CHUNKS:
-        logger.warning(
-            "Subject %s has only %d chunks (< %d). Skipping initial build.",
-            subject_id, N, MIN_CHUNKS
-        )
-        return {"status": "skipped_insufficient_chunks", "leaf_count": N}
 
     if has_graph:
+        if N < MIN_CHUNKS:
+            logger.warning(
+                "Subject %s chunk count dropped to %d (< %d). Deleting existing graph.",
+                subject_id, N, MIN_CHUNKS
+            )
+            shutil.rmtree(graph_dir, ignore_errors=True)
+            return {"status": "removed_insufficient_chunks", "leaf_count": N}
+        
         logger.info("Subject %s already has a graph. Performing INCREMENTAL update.", subject_id)
         return _incremental_build_logic(subject_id, leaf_matrix_f32, leaf_meta)
     else:
+        if N < MIN_CHUNKS:
+            logger.warning(
+                "Subject %s has only %d chunks (< %d). Skipping initial build.",
+                subject_id, N, MIN_CHUNKS
+            )
+            return {"status": "skipped_insufficient_chunks", "leaf_count": N}
+        
         logger.info("Subject %s is new or graph missing. Performing FULL rebuild.", subject_id)
         return _full_build_logic(subject_id, leaf_matrix_f32, leaf_meta)
 
@@ -421,8 +426,8 @@ async def run_builder() -> None:
 
                 if status == "success":
                     await _update_subject_status(pool, subject_id, "ready", leaf_count)
-                elif status == "skipped_insufficient_chunks":
-                    await _update_subject_status(pool, subject_id, "none")
+                elif status in ("skipped_insufficient_chunks", "removed_insufficient_chunks"):
+                    await _update_subject_status(pool, subject_id, "none", leaf_count)
                 else:
                     await _update_subject_status(pool, subject_id, "failed")
 
