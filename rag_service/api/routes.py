@@ -193,10 +193,10 @@ async def ask_question(req: AskRequest) -> AskResponse:
 
     try:
         if is_rag_required:
-            if req.deep_analysis or req.mindmap_mode or req.notebook_mode:
-                # Use full text for specific deep analysis, mindmap mode, or notebook creation (holistic tasks)
-                logger.info("Fetching full text from DB. deep_analysis=%s, mindmap_mode=%s, notebook_mode=%s", 
-                            req.deep_analysis, req.mindmap_mode, req.notebook_mode)
+            if req.deep_analysis or req.mindmap_mode or req.notebook_mode or req.task_plan:
+                # Use full text for specific deep analysis, mindmap mode, notebook creation, or task planning (holistic tasks)
+                logger.info("Fetching full text from DB. deep_analysis=%s, mindmap_mode=%s, notebook_mode=%s, task_plan=%s", 
+                            req.deep_analysis, req.mindmap_mode, req.notebook_mode, req.task_plan)
                 scored_points = await document_service.fetch_full_text(
                     document_ids=req.document_ids, 
                     subject_id=req.subject_id

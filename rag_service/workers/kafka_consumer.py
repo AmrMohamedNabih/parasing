@@ -187,24 +187,36 @@ async def _process_question(req: QuestionRequest) -> None:
 
 
 async def _run_pipeline(req, embedding_service, search_service, generation_service) -> None:
+    from rag_service.services.document_service import document_service
     # 1. Embed query
     query_vector = await embedding_service.encode_query(req.question)
 
     # 2. Context Retrieval
+    is_rag_required = (req.document_ids and len(req.document_ids) > 0) or req.global_search
+    scored_points = []
+    majority_rtl = False
+
     try:
-        if req.deep_analysis and req.document_ids:
-            logger.info("Deep analysis requested for %s. Fetching full text from DB.", req.question_id)
-            scored_points = await document_service.fetch_full_text(req.document_ids)
-            majority_rtl = sum(1 for p in scored_points if p.payload.get("direction") == "rtl") > len(scored_points) / 2 if scored_points else False
+        if is_rag_required:
+            if req.deep_analysis or req.task_plan or req.mindmap_mode or req.notebook_mode:
+                logger.info("Holistic mode requested (deep_analysis=%s, task_plan=%s, mindmap=%s, notebook=%s) for %s. Fetching full text from DB.", 
+                            req.deep_analysis, req.task_plan, req.mindmap_mode, req.notebook_mode, req.question_id)
+                scored_points = await document_service.fetch_full_text(
+                    document_ids=req.document_ids,
+                    subject_id=req.subject_id
+                )
+                majority_rtl = sum(1 for p in scored_points if p.payload.get("direction") == "rtl") > len(scored_points) / 2 if scored_points else False
+            else:
+                scored_points, majority_rtl = await search_service.semantic_search(
+                    query_vector=query_vector,
+                    user_id=req.user_id,
+                    subject_id=req.subject_id,
+                    document_ids=req.document_ids,
+                    top_k=req.top_k or settings.TOP_K_RESULTS,
+                    use_edag=req.global_search,
+                )
         else:
-            scored_points, majority_rtl = await search_service.semantic_search(
-                query_vector=query_vector,
-                user_id=req.user_id,
-                subject_id=req.subject_id,
-                document_ids=req.document_ids,
-                top_k=req.top_k or settings.TOP_K_RESULTS,
-                use_edag=req.global_search,
-            )
+            logger.info("No documents or global search requested for %s. Skipping retrieval.", req.question_id)
     except Exception as exc:
         logger.error("Context retrieval failed for %s: %s", req.question_id, exc)
         await _publish_error(req.question_id, "Context retrieval service unavailable.")

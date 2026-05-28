@@ -124,6 +124,7 @@ def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool =
 
 
 def _user_prompt(question: str, scored_points: list, deep_analysis: bool = False, summary: str = None) -> str:
+    from datetime import datetime
     summary_context = f"\n\n[Background Context: Summary of previous points in this conversation]\n{summary}\n[End of Background Context]" if summary else ""
     
     passages = []
@@ -135,11 +136,13 @@ def _user_prompt(question: str, scored_points: list, deep_analysis: bool = False
         )
     
     analysis_context = "\n\n(Note: This is a deep analysis request. Please provide a thorough breakdown.)" if deep_analysis else ""
+    current_time = datetime.now().strftime("%A, %B %d, %Y, %I:%M %p")
+    time_context = f"\n[Current Time: {current_time}]"
     
     return (
         "Context passages:\n\n"
         + "\n\n".join(passages)
-        + f"\n\n---\n{summary_context}\nQuestion: {question}{analysis_context}\n\nAnswer:"
+        + f"\n\n---\n{summary_context}{time_context}\nQuestion: {question}{analysis_context}\n\nAnswer:"
     )
 
 
@@ -215,7 +218,7 @@ class GenerationService:
         logger.info(interaction_log)
         # ────────────────────────────────────────────────────────────────────
 
-        if mindmap_mode or notebook_mode:
+        if mindmap_mode or notebook_mode or task_plan:
             max_tokens = 8192
         else:
             max_tokens = 2048 if deep_analysis else 1024
