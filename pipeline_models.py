@@ -12,7 +12,6 @@ class ExtractionStage(Enum):
     DIRECT = "direct"
     BLOCK_OCR = "block_ocr"
     FULL_PAGE_OCR = "full_page_ocr"
-    GRID_OCR = "grid_ocr"
     IMAGE_OCR = "image_ocr"
     MERGED = "merged"
     POST_PROCESSED = "post_processed"
@@ -154,14 +153,6 @@ class FullPageOCRResult(StageResult):
     stage: ExtractionStage = ExtractionStage.FULL_PAGE_OCR
     page_image_dpi: int = 300
     preprocessing_applied: bool = True
-
-
-@dataclass
-class GridOCRResult(StageResult):
-    """Result from Stage 4: Adaptive Grid OCR"""
-    stage: ExtractionStage = ExtractionStage.GRID_OCR
-    grid_regions: int = 0
-    regions_with_text: int = 0
 
 
 @dataclass

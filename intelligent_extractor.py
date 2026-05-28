@@ -21,7 +21,7 @@ from difflib import SequenceMatcher
 from pipeline_models import (
     TextBlock, ImageBlock, ExtractionStage, TextDirection,
     DirectExtractionResult, BlockOCRResult, FullPageOCRResult,
-    GridOCRResult, ImageOCRResult, MergeResult, PostProcessingResult,
+    ImageOCRResult, MergeResult, PostProcessingResult,
     PageResult, DocumentResult, StageResult
 )
 
@@ -65,6 +65,11 @@ class IntelligentPDFExtractor:
         self.dpi = dpi
         self.ocr_engine = ocr_engine
         
+        # Resolve Poppler path
+        self.poppler_path = self._resolve_poppler_path()
+        if self.poppler_path:
+            print(f"Using resolved Poppler path: {self.poppler_path}")
+        
         # Initialize EasyOCR reader if selected
         self.easyocr_reader = None
         if ocr_engine == 'easyocr':
@@ -72,6 +77,30 @@ class IntelligentPDFExtractor:
         
         # Stage enablement based on mode
         self.stages_enabled = self._configure_stages(mode)
+    
+    def _resolve_poppler_path(self) -> Optional[str]:
+        """Dynamically resolve Poppler path on Windows or from env var"""
+        env_path = os.getenv("POPPLER_PATH")
+        if env_path and os.path.exists(env_path):
+            return env_path
+            
+        if os.name == 'nt':
+            # Check default winget packages directory
+            local_appdata = os.getenv("LOCALAPPDATA")
+            if local_appdata:
+                import glob
+                search_pattern = os.path.join(
+                    local_appdata,
+                    "Microsoft",
+                    "WinGet",
+                    "Packages",
+                    "**",
+                    "pdftoppm.exe"
+                )
+                matches = glob.glob(search_pattern, recursive=True)
+                if matches:
+                    return os.path.dirname(matches[0])
+        return None
     
     def _init_easyocr(self):
         """Initialize EasyOCR reader"""
@@ -103,7 +132,6 @@ class IntelligentPDFExtractor:
                 'direct': True,
                 'block_ocr': True,
                 'full_page_ocr': False,
-                'grid_ocr': False,
                 'image_ocr': True,
                 'merge': True,
                 'post_process': True
@@ -113,7 +141,6 @@ class IntelligentPDFExtractor:
                 'direct': True,
                 'block_ocr': True,
                 'full_page_ocr': True,
-                'grid_ocr': True,
                 'image_ocr': True,
                 'merge': True,
                 'post_process': True
@@ -123,7 +150,6 @@ class IntelligentPDFExtractor:
                 'direct': True,
                 'block_ocr': True,
                 'full_page_ocr': True,
-                'grid_ocr': False,
                 'image_ocr': True,
                 'merge': True,
                 'post_process': True
@@ -329,7 +355,8 @@ class IntelligentPDFExtractor:
                 pdf_path,
                 dpi=self.dpi,
                 first_page=page_num + 1,
-                last_page=page_num + 1
+                last_page=page_num + 1,
+                poppler_path=self.poppler_path
             )
             
             if not images:
@@ -452,7 +479,8 @@ class IntelligentPDFExtractor:
                 pdf_path,
                 dpi=self.dpi,
                 first_page=page_num + 1,
-                last_page=page_num + 1
+                last_page=page_num + 1,
+                poppler_path=self.poppler_path
             )
             
             if not images:
@@ -494,120 +522,6 @@ class IntelligentPDFExtractor:
     
     # ==================== STAGE 4: ADAPTIVE GRID OCR ====================
     
-    def stage4_grid_ocr(self, pdf_path: str, page_num: int,
-                       page_width: float, page_height: float,
-                       existing_blocks: List[TextBlock]) -> GridOCRResult:
-        """
-        Stage 4: Adaptive grid OCR for scattered text
-        RUNS ONLY if previous stages are still insufficient
-        """
-        start_time = time.time()
-        result = GridOCRResult()
-        
-        if not self.stages_enabled['grid_ocr']:
-            result.execution_time = time.time() - start_time
-            return result
-        
-        # Check if grid OCR is needed (text is still sparse)
-        total_chars = sum(block.char_count for block in existing_blocks)
-        if total_chars > 200:  # Sufficient text already
-            result.execution_time = time.time() - start_time
-            return result
-        
-        try:
-            # Convert page to image
-            images = convert_from_path(
-                pdf_path,
-                dpi=self.dpi,
-                first_page=page_num + 1,
-                last_page=page_num + 1
-            )
-            
-            if not images:
-                result.execution_time = time.time() - start_time
-                return result
-            
-            image = images[0]
-            img_width, img_height = image.size
-            
-            # Detect text-sparse regions (adaptive grid)
-            regions = self._detect_sparse_regions(image, existing_blocks, page_width, page_height)
-            result.grid_regions = len(regions)
-            
-            grid_blocks = []
-            for i, region in enumerate(regions):
-                x0, y0, x1, y1 = region
-                cropped = image.crop((x0, y0, x1, y1))
-                
-                # Run OCR based on selected engine
-                if self.ocr_engine == 'easyocr' and self.easyocr_reader:
-                    text = self._run_easyocr(cropped)
-                else:
-                    cropped = self._preprocess_image(cropped)
-                    text = pytesseract.image_to_string(cropped, lang=self.lang, config='--oem 3 --psm 6')
-                
-                if text.strip():
-                    result.regions_with_text += 1
-                    direction, rtl_ratio = self._detect_text_direction(text)
-                    
-                    # Convert image coordinates back to PDF coordinates
-                    scale_x = page_width / img_width
-                    scale_y = page_height / img_height
-                    pdf_bbox = [x0 * scale_x, y0 * scale_y, x1 * scale_x, y1 * scale_y]
-                    
-                    grid_block = TextBlock(
-                        block_id=f"p{page_num + 1}_grid{i}",
-                        bbox=pdf_bbox,
-                        text=text.strip(),
-                        confidence=0.7,
-                        source_stage=ExtractionStage.GRID_OCR,
-                        direction=direction,
-                        rtl_ratio=rtl_ratio
-                    )
-                    grid_blocks.append(grid_block)
-            
-            result.blocks = grid_blocks
-            
-        except Exception as e:
-            result.success = False
-            result.error_message = str(e)
-        
-        result.execution_time = time.time() - start_time
-        return result
-    
-    def _detect_sparse_regions(self, image: Image.Image, existing_blocks: List[TextBlock],
-                               page_width: float, page_height: float) -> List[List[int]]:
-        """Detect regions with sparse text coverage for adaptive grid OCR"""
-        img_width, img_height = image.size
-        
-        # Divide into 3x3 grid
-        grid_w = img_width // 3
-        grid_h = img_height // 3
-        
-        sparse_regions = []
-        
-        for row in range(3):
-            for col in range(3):
-                x0 = col * grid_w
-                y0 = row * grid_h
-                x1 = x0 + grid_w
-                y1 = y0 + grid_h
-                
-                # Convert to PDF coordinates to check overlap
-                scale_x = page_width / img_width
-                scale_y = page_height / img_height
-                pdf_region = [x0 * scale_x, y0 * scale_y, x1 * scale_x, y1 * scale_y]
-                
-                # Check if this region has existing text
-                has_text = any(
-                    self._bbox_overlap(pdf_region, block.bbox) > 0.3
-                    for block in existing_blocks
-                )
-                
-                if not has_text:
-                    sparse_regions.append([x0, y0, x1, y1])
-        
-        return sparse_regions
     
     def _bbox_overlap(self, bbox1: List[float], bbox2: List[float]) -> float:
         """Calculate IoU overlap between two bounding boxes"""
@@ -750,7 +664,6 @@ class IntelligentPDFExtractor:
                 ExtractionStage.DIRECT: 5,
                 ExtractionStage.BLOCK_OCR: 4,
                 ExtractionStage.FULL_PAGE_OCR: 3,
-                ExtractionStage.GRID_OCR: 2,
                 ExtractionStage.IMAGE_OCR: 1
             }
             
@@ -942,18 +855,13 @@ class IntelligentPDFExtractor:
         # Collect blocks so far
         current_blocks = stage1_result.blocks + stage2_result.blocks + stage3_result.blocks
         
-        # Stage 4: Adaptive Grid OCR (CONDITIONAL)
-        print(f"  Stage 4: Adaptive grid OCR...")
-        stage4_result = self.stage4_grid_ocr(pdf_path, page_num, page_width, page_height,
-                                             current_blocks)
-        
         # Stage 5: Image OCR (IF IMAGES EXIST)
         print(f"  Stage 5: Image OCR...")
         stage5_result = self.stage5_image_ocr(pdf_path, page_num, images_dir if extract_images else None)
         
         # Stage 6: Merge & De-duplication (ALWAYS)
         print(f"  Stage 6: Merge & de-duplication...")
-        all_stage_results = [stage1_result, stage2_result, stage3_result, stage4_result, stage5_result]
+        all_stage_results = [stage1_result, stage2_result, stage3_result, stage5_result]
         stage6_result = self.stage6_merge_deduplication(all_stage_results, page_num)
         
         # Stage 7: Post-Processing (ALWAYS)
@@ -983,7 +891,6 @@ class IntelligentPDFExtractor:
             ExtractionStage.DIRECT: stage1_result,
             ExtractionStage.BLOCK_OCR: stage2_result,
             ExtractionStage.FULL_PAGE_OCR: stage3_result,
-            ExtractionStage.GRID_OCR: stage4_result,
             ExtractionStage.IMAGE_OCR: stage5_result,
             ExtractionStage.MERGED: stage6_result,
             ExtractionStage.POST_PROCESSED: stage7_result

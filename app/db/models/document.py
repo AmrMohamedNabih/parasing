@@ -1,6 +1,11 @@
 import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.db.models.subject import Subject
+    from app.db.models.user import User
 
 from sqlalchemy import (
     DateTime,
@@ -126,7 +131,7 @@ class TextBlock(Base):
     like "get all Arabic blocks for user X, subject Y" without multi-level joins.
 
     The `source_stage` field records which pipeline stage produced this block:
-    direct | block_ocr | full_page_ocr | grid_ocr | image_ocr | post_processed
+    direct | block_ocr | full_page_ocr | image_ocr | post_processed
     """
     __tablename__ = "text_blocks"
 
