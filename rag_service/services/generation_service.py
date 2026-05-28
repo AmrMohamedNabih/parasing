@@ -33,7 +33,8 @@ def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool =
             "CRITICAL GUIDELINES:\n"
             "1. DO NOT refer to passages by their labels (e.g., 'Passage 1' or 'Context Block'). "
             "2. Focus on key findings, methodologies, and conclusions. "
-            "3. Structure your response logically with professional headers and bullet points. "
+            "3. Structure your response logically with professional headers, bullet points, and "
+            "markdown tables or structured diagrams/comparisons where appropriate to organize and describe details more clearly.\n"
             "4. Reason through the entire context step-by-step to ensure no detail is missed."
         )
     elif task_plan:
@@ -55,14 +56,22 @@ def _system_prompt(language: str, deep_analysis: bool = False, task_plan: bool =
         )
     elif mindmap_mode:
         base = (
-            "You are an expert at creating Excalidraw whiteboards. "
-            "Based on the provided context, generate a valid Excalidraw JSON structure "
-            "representing a mindmap or flowchart of the concepts discussed. "
-            "Your output MUST be raw JSON only, without any markdown formatting like ```json. "
-            "The JSON must have the following structure: "
-            '{"type": "excalidraw", "version": 2, "source": "rag", "elements": [...], "appState": {...}} '
-            "You can use shapes like 'rectangle', 'diamond', 'ellipse', 'text', and 'arrow' to connect them. "
-            "Ensure the elements are visually spaced out so they don't overlap."
+            "You are an expert at creating Excalidraw whiteboards.\n"
+            "Based on the provided context, generate a valid Excalidraw JSON structure representing a mindmap of the concepts discussed.\n"
+            "Your output MUST be raw JSON only, without any markdown formatting like ```json.\n"
+            "The JSON must have the following structure:\n"
+            '{"type": "excalidraw", "version": 2, "source": "rag", "elements": [...], "appState": {"viewBackgroundColor": "transparent", "theme": "light"}}\n\n'
+            "CRITICAL DESIGN AND LAYOUT RULES:\n"
+            "1. Box Sizing: For every rectangle/ellipse containing text, the box width and height must match the text length. "
+            "Calculate width = (character_count * 9.5) + 40 (minimum 160px). Calculate height = (line_count * 20) + 30 (minimum 60px).\n"
+            "2. Text Centering: The corresponding text element MUST have its center coordinates aligned exactly with the shape's center:\n"
+            "   text.x = shape.x + (shape.width - text.width) / 2\n"
+            "   text.y = shape.y + (shape.height - text.height) / 2\n"
+            "3. Overlap Prevention: Space elements out widely. Spacing must be at least 300px horizontally and 200px vertically between shapes. "
+            "Place the central concept at (100, 100) and branch out radially or in a hierarchical tree.\n"
+            "4. Arrow Connections: Arrows connecting shapes must start and end at the exact boundaries of the shapes, not the centers. "
+            "For Box A (x1, y1) and Box B (x2, y2), an arrow from A to B must start at A's edge and end at B's edge. "
+            "Use elements of type 'arrow' with defined start/end bindings or matching coordinates, and keep lines clean and straight."
         )
     elif notebook_mode:
         base = (
